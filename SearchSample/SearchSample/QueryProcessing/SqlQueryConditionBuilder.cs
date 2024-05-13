@@ -1,4 +1,6 @@
-﻿namespace SearchSample.QueryProcessing;
+﻿using System.Collections.Generic;
+
+namespace SearchSample.QueryProcessing;
 
 public class SqlQueryConditionBuilder(TokenizerConfig config)
 {
@@ -8,7 +10,7 @@ public class SqlQueryConditionBuilder(TokenizerConfig config)
         Stack<string> stack = new();
         foreach (var token in postfixTokens)
         {
-            if (IsOperator(token))
+            if (config.IsOperator(token))
             {
                 if (token == config.NotToken)
                 {
@@ -30,7 +32,5 @@ public class SqlQueryConditionBuilder(TokenizerConfig config)
         }
         return stack.Pop();
     }
-
-    private bool IsOperator(string token) => token == config.AndToken || token == config.OrToken || token == config.NotToken;
 
 }

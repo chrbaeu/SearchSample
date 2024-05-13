@@ -1,6 +1,6 @@
-using FluentAssertions;
-using SearchSample;
+﻿using FluentAssertions;
 using SearchSample.QueryProcessing;
+using System;
 
 namespace SearchSampleTests;
 

@@ -1,4 +1,6 @@
-﻿namespace SearchSample.QueryProcessing;
+﻿using System.Collections.Generic;
+
+namespace SearchSample.QueryProcessing;
 
 public record class TokenizerConfig
 {
@@ -16,4 +18,7 @@ public record class TokenizerConfig
     public IReadOnlySet<char> NotOperatorChars { get; init; } = new HashSet<char>() { '!' };
     public IReadOnlySet<char> AndOperatorChars { get; init; } = new HashSet<char>() { '&' };
     public IReadOnlySet<char> OrOperatorChars { get; init; } = new HashSet<char>() { '|' };
+
+    public bool IsBracket(string token) => token == OpeningBracketToken || token == ClosingBracketToken;
+    public bool IsOperator(string token) => token == AndToken || token == OrToken || token == NotToken;
 }

@@ -1,33 +1,41 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SearchSample.QueryProcessing;
+﻿using SearchSample.QueryProcessing;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace SearchSample.SearchProcessing;
 
-public class SearchService<TSearchableData, TFilterTagCollection>(TokenizerConfig config)
+public class SearchService<TSearchableData, TFilterTagCollection>
     where TSearchableData : ISearchableData<TFilterTagCollection>
     where TFilterTagCollection : IEnumerable<IFilterTag>
 {
 
-    private readonly QueryStringTokenizer tokenizer = new(config);
-    private readonly InfixToPostfixConverter converter = new(config);
-    private readonly PredicateBuilder predicateBuilder = new(config);
-    private readonly WeightingFunctionBuilder weightingFunctionBuilder = new(config);
+    private readonly TokenizerConfig config;
+    private readonly PredicateBuilder predicateBuilder;
+    private readonly QueryStringTokenizer tokenizer;
+    private readonly InfixToPostfixConverter converter;
+    private readonly WeightingFunctionBuilder weightingFunctionBuilder;
+
+    public SearchService(TokenizerConfig config, PredicateBuilder predicateBuilder)
+    {
+        this.config = config;
+        this.predicateBuilder = predicateBuilder;
+        tokenizer = new(config);
+        converter = new(config);
+        weightingFunctionBuilder = new(config);
+    }
 
     public IList<Guid> Search(ISearchDataProvider<TSearchableData, TFilterTagCollection> searchDataProvider, SearchRequest searchRequest)
     {
         var tokens = tokenizer.GetTokens(searchRequest.SearchText);
         var postfix = converter.InfixToPostfix(tokens);
-        var predicate = predicateBuilder.CreateExpression(postfix, (TSearchableData x) => x.Text);
+        var predicate = predicateBuilder.CreateExpression(postfix, (TSearchableData x) => x.FullText);
         var query = searchDataProvider.GetQueryable()
             .Where(predicate);
-        foreach (var filter in searchRequest.FilterTag)
-        {
-            query = query.Where(x => x.FilterTags.Any(y => y.Type == filter.Type && y.Value == filter.Value));
-        }
+        query = ApplyFilters(searchRequest, query);
         return query
-            .OrderByDescending(x => x.Weight)
-            .Select(x => x.Uuid)
+            .Select(x => x.ItemUuid)
             .ToList();
     }
 
@@ -35,22 +43,43 @@ public class SearchService<TSearchableData, TFilterTagCollection>(TokenizerConfi
     {
         var tokens = tokenizer.GetTokens(searchRequest.SearchText);
         var postfix = converter.InfixToPostfix(tokens);
-        var predicate = predicateBuilder.CreateExpression(postfix, (TSearchableData x) => x.Text);
+        var predicate = predicateBuilder.CreateExpression(postfix, (TSearchableData x) => x.FullText);
         MethodInfo methodInfo = typeof(WeightingHelper).GetMethod(nameof(WeightingHelper.CountInFirstLine))!;
-        var weightingFunction = weightingFunctionBuilder.CreateExpression(postfix, (TSearchableData x) => x.Text, methodInfo).Compile();
+        var weightingFunction = weightingFunctionBuilder.CreateExpression(postfix, (TSearchableData x) => x.FullText, methodInfo).Compile();
         var query = searchDataProvider.GetQueryable()
             .Where(predicate);
-        foreach (var filter in searchRequest.FilterTag)
-        {
-            query = query.Where(x => x.FilterTags.Any(y => y.Type == filter.Type && y.Value == filter.Value));
-        }
-        Console.WriteLine(query.ToQueryString());
+        query = ApplyFilters(searchRequest, query);
+        //Console.WriteLine(query.ToQueryString());
         return query
             .AsEnumerable()
             .Select(item => new { Item = item, Score = weightingFunction(item) })
-            .OrderByDescending(x => x.Item.Weight + x.Score)
+            .OrderByDescending(x => x.Score)
             .Select(x => x.Item)
             .ToList();
     }
 
+    private static IQueryable<TSearchableData> ApplyFilters(SearchRequest searchRequest, IQueryable<TSearchableData> query)
+    {
+        foreach (var filter in searchRequest.SearchFilters)
+        {
+            if (filter.Values.Count == 1)
+            {
+                var filterValue = filter.Values.First();
+                query = query.Where(x => x.FilterTags.Any(y => y.FilterTypeUuid == filter.FilterTypeUuid && y.Value == filterValue));
+            }
+            else
+            {
+                if (filter.Values.Count == 1)
+                {
+                    var filterValue = filter.Values.First();
+                    query = query.Where(x => x.FilterTags.Any(y => y.FilterTypeUuid == filter.FilterTypeUuid && y.Value == filterValue));
+                }
+                else
+                {
+                    query = query.Where(x => x.FilterTags.Any(y => y.FilterTypeUuid == filter.FilterTypeUuid && filter.Values.Contains(y.Value)));
+                }
+            }
+        }
+        return query;
+    }
 }

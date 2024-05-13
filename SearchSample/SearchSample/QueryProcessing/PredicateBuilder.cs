@@ -1,9 +1,10 @@
-﻿using System.Linq.Expressions;
-using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace SearchSample.QueryProcessing;
 
-public class PredicateBuilder(TokenizerConfig config)
+public abstract class PredicateBuilder(TokenizerConfig config)
 {
 
     public Expression<Func<T, bool>> CreateExpression<T>(List<string> postfixTokens, Expression<Func<T, string>> propertyAccessor)
@@ -12,26 +13,14 @@ public class PredicateBuilder(TokenizerConfig config)
         return CreateExpression<T>(postfixTokens, property.Member.Name);
     }
 
-    public Expression<Func<T, bool>> CreateExpression<T>(List<string> postfixTokens, Expression<Func<T, string>> propertyAccessor, MethodInfo containsMethod)
-    {
-        MemberExpression property = (MemberExpression)propertyAccessor.Body;
-        return CreateExpression<T>(postfixTokens, property.Member.Name, containsMethod);
-    }
-
     public Expression<Func<T, bool>> CreateExpression<T>(List<string> postfixTokens, string propertyName)
-    {
-        var containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!;
-        return CreateExpression<T>(postfixTokens, propertyName, containsMethod);
-    }
-
-    public Expression<Func<T, bool>> CreateExpression<T>(List<string> postfixTokens, string propertyName, MethodInfo containsMethod)
     {
         var stack = new Stack<Expression<Func<T, bool>>>();
         var param = Expression.Parameter(typeof(T), "x");
         var property = Expression.PropertyOrField(param, propertyName);
         foreach (var token in postfixTokens)
         {
-            if (IsOperator(token))
+            if (config.IsOperator(token))
             {
                 if (token == config.NotToken)
                 {
@@ -49,13 +38,32 @@ public class PredicateBuilder(TokenizerConfig config)
             }
             else
             {
-                var body = Expression.Call(property, containsMethod, Expression.Constant(token));
+                var body = ContainsMethodCallBuilder(property, token);
                 stack.Push(Expression.Lambda<Func<T, bool>>(body, param));
             }
         }
         return stack.Pop();
     }
 
-    private bool IsOperator(string token) => token == config.AndToken || token == config.OrToken || token == config.NotToken;
+    protected abstract MethodCallExpression ContainsMethodCallBuilder(MemberExpression property, string token);
+
+    //protected virtual MethodCallExpression ContainsMethodCallBuilder(MemberExpression property, string token)
+    //{
+    //    MethodInfo containsMethod = typeof(SqlServerDbFunctionsExtensions)
+    //            .GetMethod(nameof(SqlServerDbFunctionsExtensions.Contains), [typeof(DbFunctions), typeof(object), typeof(string)])!;
+    //    return Expression.Call(null, containsMethod, Expression.Constant(EF.Functions), property, Expression.Constant(token));
+    //}
+
+    //protected virtual MethodCallExpression ContainsMethodCallBuilderY(MemberExpression property, string token)
+    //{
+    //    MethodInfo containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string), typeof(StringComparison)])!;
+    //    return Expression.Call(property, containsMethod, Expression.Constant(token), Expression.Constant(StringComparison.OrdinalIgnoreCase));
+    //}
+
+    //protected virtual MethodCallExpression ContainsMethodCallBuilder(MemberExpression property, string token)
+    //{
+    //    MethodInfo containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!;
+    //    return Expression.Call(property, containsMethod, Expression.Constant(token));
+    //}
 
 }

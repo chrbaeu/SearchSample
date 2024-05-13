@@ -1,8 +1,10 @@
 ﻿
+using System;
+
 namespace SearchSample.SearchProcessing;
 
 public interface IFilterTag
 {
-    Guid Type { get; }
+    Guid FilterTypeUuid { get; }
     string Value { get; }
 }

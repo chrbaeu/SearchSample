@@ -5,4 +5,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SearchSample\SearchSample.csproj" />
+  </ItemGroup>
+
 </Project>

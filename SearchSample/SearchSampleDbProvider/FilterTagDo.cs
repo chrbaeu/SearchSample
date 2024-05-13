@@ -1,11 +1,12 @@
 ﻿using SearchSample.SearchProcessing;
+using System;
 
-namespace SearchSampleApp;
+namespace SearchSampleApp.DbDataProvider;
 
 public class FilterTagDo : IFilterTag
 {
     public long Id { get; set; }
-    public Guid SearchableDataUuid { get; set; }
-    public Guid Type { get; set; }
+    public Guid ItemUuid { get; set; }
+    public Guid FilterTypeUuid { get; set; }
     public string Value { get; set; } = "";
 }

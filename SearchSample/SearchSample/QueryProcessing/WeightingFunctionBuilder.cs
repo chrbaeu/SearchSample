@@ -1,4 +1,6 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace SearchSample.QueryProcessing;
@@ -18,7 +20,7 @@ public class WeightingFunctionBuilder(TokenizerConfig config)
         var param = Expression.Parameter(typeof(T), "x");
         foreach (var token in postfixTokens)
         {
-            if (IsOperator(token))
+            if (config.IsOperator(token))
             {
                 if (token != config.NotToken)
                 {
@@ -40,11 +42,6 @@ public class WeightingFunctionBuilder(TokenizerConfig config)
             }
         }
         return stack.Pop();
-    }
-
-    private bool IsOperator(string token)
-    {
-        return token == config.AndToken || token == config.OrToken || token == config.NotToken;
     }
 
 }

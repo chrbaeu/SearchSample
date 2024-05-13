@@ -1,26 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.4" />
   </ItemGroup>
-
+  
   <ItemGroup>
-    <ProjectReference Include="..\SearchSampleDbProvider\SearchSampleDbProvider.csproj" />
-    <ProjectReference Include="..\SearchSampleInMemoryProvider\SearchSampleInMemoryProvider.csproj" />
     <ProjectReference Include="..\SearchSample\SearchSample.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Update="items.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
+  
 </Project>

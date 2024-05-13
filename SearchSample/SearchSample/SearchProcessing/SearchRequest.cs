@@ -1,6 +1,8 @@
-﻿namespace SearchSample.SearchProcessing;
+﻿using System.Collections.Generic;
+
+namespace SearchSample.SearchProcessing;
 
 public record class SearchRequest(string SearchText)
 {
-    public IReadOnlyCollection<IFilterTag> FilterTag { get; init; } = [];
+    public IReadOnlyCollection<SearchFilter> SearchFilters { get; init; } = [];
 }

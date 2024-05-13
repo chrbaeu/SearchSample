@@ -1,4 +1,6 @@
-﻿namespace SearchSample.QueryProcessing;
+﻿using System.Collections.Generic;
+
+namespace SearchSample.QueryProcessing;
 
 public class InfixToPostfixConverter
 {
@@ -20,9 +22,9 @@ public class InfixToPostfixConverter
         List<string> output = [];
         foreach (var token in tokens)
         {
-            if (IsOperator(token))
+            if (config.IsOperator(token))
             {
-                while (stack.Count > 0 && IsOperator(stack.Peek()) &&
+                while (stack.Count > 0 && config.IsOperator(stack.Peek()) &&
                        (leftAssociative[token] && precedence[token] <= precedence[stack.Peek()] ||
                         !leftAssociative[token] && precedence[token] < precedence[stack.Peek()]))
                 {
@@ -53,7 +55,5 @@ public class InfixToPostfixConverter
         }
         return output;
     }
-
-    private bool IsOperator(string token) => precedence.ContainsKey(token);
 
 }
