@@ -1,4 +1,4 @@
-﻿namespace SearchSample.SearchProcessing;
+﻿namespace SearchSample.Interfaces;
 
 public interface ISearchFilterData
 {

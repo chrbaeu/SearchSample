@@ -1,9 +1,12 @@
-﻿using SearchSample.QueryParser;
+﻿using SearchSample.Interfaces;
+using SearchSample.QueryParser;
 using SearchSample.QueryProcessing;
+using SearchSample.RequestModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace SearchSample.SearchProcessing;
 
@@ -22,17 +25,7 @@ public static class QueryableSearchExtensions
         predicateBuilderDict[typeof(TQueryProvider)] = typeof(TSearchPredicateBuilder);
     }
 
-    public static IQueryable<TSearchData> WhereSearchRequestIsMatched<TSearchData, TFilterDataCollection>(this IQueryable<TSearchData> queryable,
-        SearchRequest searchRequest, SearchQueryParser searchQueryParser)
-        where TSearchData : ISearchData<TFilterDataCollection>
-        where TFilterDataCollection : IEnumerable<ISearchFilterData>
-    {
-        queryable = WhereSearchQueryIsMatched(queryable, x => x.FullText, searchRequest.SearchQuery, searchQueryParser);
-        queryable = WhereSearchFiltersAreMatched<TSearchData, TFilterDataCollection>(queryable, searchRequest.SearchFilters);
-        return queryable;
-    }
-
-    public static IQueryable<T> WhereSearchQueryIsMatched<T>(this IQueryable<T> queryable, Expression<Func<T, string>> propertyAccessor,
+    public static IQueryable<T> SearchByQueryString<T>(this IQueryable<T> queryable, Expression<Func<T, string>> propertyAccessor,
         string searchQuery, SearchQueryParser searchQueryParser)
     {
         SearchPredicateBuilder searchPredicateBuilder;
@@ -53,7 +46,7 @@ public static class QueryableSearchExtensions
         return queryable.Where(predicate);
     }
 
-    public static IQueryable<TSearchData> WhereSearchFiltersAreMatched<TSearchData, TFilterDataCollection>(this IQueryable<TSearchData> queryable,
+    public static IQueryable<TSearchData> SearchByFilters<TSearchData, TFilterDataCollection>(this IQueryable<TSearchData> queryable,
         IEnumerable<SearchFilter> searchFilters)
         where TSearchData : ISearchData<TFilterDataCollection>
         where TFilterDataCollection : IEnumerable<ISearchFilterData>
@@ -71,6 +64,46 @@ public static class QueryableSearchExtensions
             }
         }
         return queryable;
+    }
+
+    public static IQueryable<TSearchData> Search<TSearchData, TFilterDataCollection>(this IQueryable<TSearchData> queryable,
+        SearchRequest searchRequest, SearchQueryParser searchQueryParser)
+        where TSearchData : ISearchData<TFilterDataCollection>
+        where TFilterDataCollection : IEnumerable<ISearchFilterData>
+    {
+        queryable = SearchByQueryString(queryable, x => x.FullText, searchRequest.SearchQuery, searchQueryParser);
+        queryable = SearchByFilters<TSearchData, TFilterDataCollection>(queryable, searchRequest.SearchFilters);
+        return queryable;
+    }
+
+    public static IEnumerable<TSearchData> WeightedSearch<TSearchData, TFilterDataCollection>(this IQueryable<TSearchData> queryable,
+        SearchRequest searchRequest, SearchQueryParser searchQueryParser)
+        where TSearchData : ISearchData<TFilterDataCollection>
+        where TFilterDataCollection : IEnumerable<ISearchFilterData>
+    {
+        var query = Search<TSearchData, TFilterDataCollection>(queryable, searchRequest, searchQueryParser);
+        MethodInfo methodInfo = typeof(QueryableSearchExtensions).GetMethod(nameof(CountMatchesInFirstLine), BindingFlags.Static | BindingFlags.NonPublic)!;
+        var postfixTokens = searchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
+        var weightingFunctionBuilder = new LinqWeightingFunctionBuilder(searchQueryParser.TokenizerConfig);
+        var weightingFunction = weightingFunctionBuilder.CreateExpression(postfixTokens, (TSearchData x) => x.FullText, methodInfo).Compile();
+        return query
+            .AsEnumerable()
+            .Select(item => new { Item = item, Score = weightingFunction(item) })
+            .OrderByDescending(x => x.Score)
+            .Select(x => x.Item);
+    }
+
+    private static int CountMatchesInFirstLine(string str, string substring)
+    {
+        var lengthToInspect = str.IndexOfAny(['\r', '\n']);
+        int count = 0, i = 0;
+        while ((i = str.IndexOf(substring, i, StringComparison.OrdinalIgnoreCase)) != -1)
+        {
+            if (i > lengthToInspect) { break; }
+            i += substring.Length;
+            count++;
+        }
+        return count;
     }
 
 }

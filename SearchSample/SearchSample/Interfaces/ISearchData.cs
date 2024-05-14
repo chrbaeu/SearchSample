@@ -1,8 +1,7 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 
-namespace SearchSample.SearchProcessing;
+namespace SearchSample.Interfaces;
 
 public interface ISearchData<TFilterTagCollection> where TFilterTagCollection : IEnumerable<ISearchFilterData>
 {

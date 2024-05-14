@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query.Internal;
-using SearchSample.DataProvider;
 using SearchSample.QueryParser;
 using SearchSample.QueryProcessing;
+using SearchSample.RequestModels;
 using SearchSample.SearchProcessing;
 using SearchSampleApp.DbDataProvider;
 using System;
@@ -25,13 +25,8 @@ internal class Program
         SearchQueryParser searchQueryParser = new();
         searchQueryParser.SynonymHandler.AddSynonym("Rot", "Red");
         searchQueryParser.SynonymHandler.AddSynonym("Grün", "Green");
-        var postfixTokens = searchQueryParser.ParseToPostfixTokens(query);
 
-        LinqPredicateBuilder predicateBuilder = new(searchQueryParser.TokenizerConfig);
-        var predicate = predicateBuilder.CreateExpression(postfixTokens, (SimpleItem x) => x.Text);
-        var compiledPredicate = predicate.Compile();
-
-        var result = items.Where(compiledPredicate).ToArray();
+        var result = items.AsQueryable().SearchByQueryString(x => x.Text, query, searchQueryParser).ToArray();
 
         SearchWordHighlighter highlighter = new(searchQueryParser.GetSearchWords(query), false);
         Console.WriteLine($"{string.Join(", ", result.Select(x => highlighter.HighlightText(x.Text)))}");
@@ -40,7 +35,7 @@ internal class Program
         Console.WriteLine($"{string.Join(", ", result.Select(x => highlighter.HighlightText(x.Text)))}");
 
 
-        var searchRequest = new SearchRequest("senkrecht bis");// { SearchFilters = [new SearchFilter(Guid.Empty, "B")] };
+        var searchRequest = new SearchRequest("senkrecht bis");
 
         RunInMemorySample(searchQueryParser, searchRequest);
 
@@ -49,73 +44,69 @@ internal class Program
         //RunSqlServerDb(searchQueryParser, searchRequest);
     }
 
-    private static void RunInMemorySample(SearchQueryParser config, SearchRequest searchRequest)
+    private static void RunInMemorySample(SearchQueryParser searchQueryParser, SearchRequest searchRequest)
     {
-        SearchService<SearchableData, IReadOnlyCollection<FilterTag>> searchService = new(config);
-
-        var data = JsonSerializer.Deserialize<List<SearchableData>>(File.ReadAllText("items.json"))!;
-        //File.WriteAllText("items.json", JsonSerializer.Serialize(data));
-
-        DictionaryBasedSearchDataProvider searchDataProvider = new();
-        searchDataProvider.SetItems(data);
+        var data = JsonSerializer.Deserialize<List<SearchableDataDo>>(File.ReadAllText("items.json"))!;
 
         var timestamp = Stopwatch.GetTimestamp();
 
-        var searchResult = searchService.WeightedSearch(searchDataProvider, searchRequest);
+        var searchResult = data.AsQueryable().WeightedSearch<SearchableDataDo, List<FilterTagDo>>(searchRequest, searchQueryParser).ToList();
 
         var time = Stopwatch.GetElapsedTime(timestamp);
         Console.WriteLine($"Time (InMemory): {time.Milliseconds}ms Matches: {searchResult.Count}");
     }
 
-    private static void RunSqliteDbSample(SearchQueryParser config, SearchRequest searchRequest)
+    private static void RunSqliteDbSample(SearchQueryParser searchQueryParser, SearchRequest searchRequest)
     {
+#pragma warning disable EF1001 // Internal EF Core API usage.
         QueryableSearchExtensions.AddPredicateBuilder<EntityQueryProvider, SqlitePredicateBuilder>();
+#pragma warning restore EF1001 // Internal EF Core API usage.
 
-        SearchService<SearchableDataDo, List<FilterTagDo>> searchService = new(config);
         File.Delete("TestDb.db");
+
         var options = new DbContextOptionsBuilder<SearchSampleDbContext>()
             .UseSqlite("Data Source=TestDb.db")
             .EnableSensitiveDataLogging()
             .Options;
-        using SearchSampleDbContext myDbContext = new(options);
-        myDbContext.Database.EnsureCreated();
+        using SearchSampleDbContext ctx = new(options);
+        ctx.Database.EnsureCreated();
 
         var data = JsonSerializer.Deserialize<List<SearchableDataDo>>(File.ReadAllText("items.json"))!;
-
-        DbContextBasedSearchDataProvider searchDataProvider = new(myDbContext);
-        searchDataProvider.SetItems(data);
+        ctx.AddRange(data);
+        ctx.SaveChanges();
 
         var timestamp = Stopwatch.GetTimestamp();
 
-        var searchResult = searchService.WeightedSearch(searchDataProvider, searchRequest);
+        var searchResult = ctx.SearchableData.AsQueryable().WeightedSearch<SearchableDataDo, List<FilterTagDo>>(searchRequest, searchQueryParser).ToList();
 
         var time = Stopwatch.GetElapsedTime(timestamp);
         Console.WriteLine($"Time (Sqlite): {time.Milliseconds}ms Matches: {searchResult.Count}");
     }
 
-    private static void RunSqlServerDb(SearchQueryParser config, SearchRequest searchRequest)
+    private static void RunSqlServerDb(SearchQueryParser searchQueryParser, SearchRequest searchRequest)
     {
-        SearchService<SearchableDataDo, List<FilterTagDo>> searchService = new(config);
+#pragma warning disable EF1001 // Internal EF Core API usage.
+        QueryableSearchExtensions.AddPredicateBuilder<EntityQueryProvider, SqlServerPredicateBuilder>();
+#pragma warning restore EF1001 // Internal EF Core API usage.
+
         var options = new DbContextOptionsBuilder<SearchSampleDbContext>()
             .UseSqlServer("")
             .Options;
-        using SearchSampleDbContext myDbContext = new(options);
-        myDbContext.Database.EnsureCreated();
+        using SearchSampleDbContext ctx = new(options);
+        ctx.Database.EnsureCreated();
 
         var data = JsonSerializer.Deserialize<List<SearchableDataDo>>(File.ReadAllText("items.json"))!;
+        ctx.AddRange(data);
+        ctx.SaveChanges();
 
-        DbContextBasedSearchDataProvider searchDataProvider = new(myDbContext);
-        searchDataProvider.SetItems(data);
-
-        var items = myDbContext.SearchableData.ToArray();
+        var items = ctx.SearchableData.ToArray();
 
         var timestamp = Stopwatch.GetTimestamp();
 
-        var searchResult = searchService.Search(searchDataProvider, searchRequest);
+        var searchResult = ctx.SearchableData.AsQueryable().WeightedSearch<SearchableDataDo, List<FilterTagDo>>(searchRequest, searchQueryParser).ToList();
 
         var time = Stopwatch.GetElapsedTime(timestamp);
         Console.WriteLine($"Time (SqlServer): {time.Milliseconds}ms Matches: {searchResult.Count}");
-
     }
 
     public class SimpleItem

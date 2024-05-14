@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SearchSampleDbProvider\SearchSampleDbProvider.csproj" />
-    <ProjectReference Include="..\SearchSampleInMemoryProvider\SearchSampleInMemoryProvider.csproj" />
     <ProjectReference Include="..\SearchSample\SearchSample.csproj" />
   </ItemGroup>
 

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace SearchSample.SearchProcessing;
+namespace SearchSample.RequestModels;
 
 public record class SearchFilter
 {

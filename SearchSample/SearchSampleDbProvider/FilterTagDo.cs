@@ -1,4 +1,4 @@
-﻿using SearchSample.SearchProcessing;
+﻿using SearchSample.Interfaces;
 using System;
 
 namespace SearchSampleApp.DbDataProvider;

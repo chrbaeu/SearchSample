@@ -14,8 +14,7 @@ public class OverviewBenchmark
 
     private readonly QueryStringTokenizer tokenizer = new(config);
     private readonly InfixToPostfixConverter converter = new(config);
-    private readonly SqlQueryConditionBuilder sqlQueryConditionBuilder = new(config);
-    private readonly LinqPredicateBuilder predicateBuilder = new(config, StringComparison.OrdinalIgnoreCase);
+    private readonly LinqPredicateBuilder predicateBuilder = new(config);
 
     private readonly string query = "A & B (C | D)";
     private readonly Test[] data = ["ABB", "ABC", "ABD", "ABE", "XBC", "ABB", "ABC", "ABD", "ABE", "XBC"];
@@ -43,12 +42,6 @@ public class OverviewBenchmark
     public List<string> InfixToPostfix()
     {
         return converter.InfixToPostfix(tokens).ToList();
-    }
-
-    [Benchmark]
-    public string ConvertToSql()
-    {
-        return sqlQueryConditionBuilder.ConvertToSql(postfix, "Text");
     }
 
     [Benchmark]

@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace SearchSample.SearchProcessing;
 
-public class WeightingFunctionBuilder(TokenizerConfig config)
+public class LinqWeightingFunctionBuilder(TokenizerConfig config)
 {
 
     public Expression<Func<T, int>> CreateExpression<T>(IEnumerable<string> postfixTokens, Expression<Func<T, string>> propertyAccessor, MethodInfo weightFunction)
