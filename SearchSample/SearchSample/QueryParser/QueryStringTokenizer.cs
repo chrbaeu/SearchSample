@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace SearchSample.QueryProcessing;
+namespace SearchSample.QueryParser;
 
-public class QueryStringTokenizer(TokenizerConfig config)
+internal sealed class QueryStringTokenizer(TokenizerConfig config)
 {
 
     public List<string> GetTokens(string queryString)
@@ -15,9 +15,9 @@ public class QueryStringTokenizer(TokenizerConfig config)
         var span = queryString.AsSpan();
         bool isSegment = false, lastWasNoOp = false;
         StringBuilder sb = new(queryString.Length);
-        for (int i = 0; i < span.Length; i++)
+        for (var i = 0; i < span.Length; i++)
         {
-            char c = span[i];
+            var c = span[i];
             if (isSegment)
             {
                 if (config.SegmentChars.Contains(c))

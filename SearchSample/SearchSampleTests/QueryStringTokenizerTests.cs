@@ -1,5 +1,5 @@
 ﻿using FluentAssertions;
-using SearchSample.QueryProcessing;
+using SearchSample.QueryParser;
 using System;
 
 namespace SearchSampleTests;

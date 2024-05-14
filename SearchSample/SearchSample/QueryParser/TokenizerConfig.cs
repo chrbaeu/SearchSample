@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace SearchSample.QueryProcessing;
+namespace SearchSample.QueryParser;
 
 public record class TokenizerConfig
 {

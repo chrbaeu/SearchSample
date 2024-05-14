@@ -1,6 +1,5 @@
 ﻿using SearchSample.SearchProcessing;
-using System;
 
 namespace SearchSample.DataProvider;
 
-public record class FilterTag(Guid FilterTypeUuid, string Value) : IFilterTag { }
+public record class FilterTag(int FilterType, long Value) : ISearchFilter { }

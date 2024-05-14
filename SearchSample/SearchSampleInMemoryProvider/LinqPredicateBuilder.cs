@@ -1,10 +1,11 @@
-﻿using System;
+﻿using SearchSample.QueryParser;
+using System;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace SearchSample.QueryProcessing;
 
-public class LinqPredicateBuilder(TokenizerConfig config, StringComparison stringComparison) : PredicateBuilder(config)
+public class LinqPredicateBuilder(TokenizerConfig config, StringComparison stringComparison) : SearchPredicateBuilder(config)
 {
 
     private readonly MethodInfo containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string), typeof(StringComparison)])!;

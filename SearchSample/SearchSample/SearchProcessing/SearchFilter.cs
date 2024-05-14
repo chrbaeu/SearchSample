@@ -1,21 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace SearchSample.SearchProcessing;
+
 public record class SearchFilter
 {
-    public SearchFilter(Guid filterTypeUuid, string value)
+    public SearchFilter() { }
+
+    public SearchFilter(int filterType, long value)
     {
-        FilterTypeUuid = filterTypeUuid;
+        FilterType = filterType;
         Values = [value];
     }
 
-    public SearchFilter(Guid filterTypeUuid, List<string> values)
+    public SearchFilter(int filterType, List<long> values)
     {
-        FilterTypeUuid = filterTypeUuid;
+        FilterType = filterType;
         Values = values;
     }
 
-    public Guid FilterTypeUuid { get; init; }
-    public IReadOnlyCollection<string> Values { get; init; }
+    public int FilterType { get; init; }
+    public IReadOnlyCollection<long> Values { get; init; } = [];
 }

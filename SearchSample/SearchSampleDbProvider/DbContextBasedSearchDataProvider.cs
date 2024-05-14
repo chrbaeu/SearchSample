@@ -21,7 +21,7 @@ public class DbContextBasedSearchDataProvider : ISearchDataProvider<SearchableDa
 
     public void SetItem(SearchableDataDo searchableData)
     {
-        var item = myDbContext.SearchableData.FirstOrDefault(s => s.ItemUuid == searchableData.ItemUuid);
+        var item = myDbContext.SearchableData.FirstOrDefault(s => s.SourceUuid == searchableData.SourceUuid);
         if (item is null)
         {
             myDbContext.SearchableData.Add(searchableData);
@@ -35,12 +35,13 @@ public class DbContextBasedSearchDataProvider : ISearchDataProvider<SearchableDa
 
     public void SetItems(ICollection<SearchableDataDo> searchableData)
     {
-        var uuids = searchableData.Select(x => x.ItemUuid);
-        var existingItemDict = myDbContext.SearchableData.Where(s => uuids.Contains(s.ItemUuid)).ToDictionary(x => x.ItemUuid);
+        var uuids = searchableData.Select(x => x.SourceUuid);
+        var existingItemDict = myDbContext.SearchableData.Where(s => uuids.Contains(s.SourceUuid)).ToDictionary(x => x.SourceUuid);
         foreach (var item in searchableData)
         {
-            if (existingItemDict.TryGetValue(item.ItemUuid, out var existingItem))
+            if (existingItemDict.TryGetValue(item.SourceUuid, out var existingItem))
             {
+                myDbContext.SearchableData.Remove(existingItem);
                 myDbContext.SearchableData.Update(item);
             }
             else
@@ -53,7 +54,7 @@ public class DbContextBasedSearchDataProvider : ISearchDataProvider<SearchableDa
 
     public void RemoveItem(Guid uuid)
     {
-        var item = myDbContext.SearchableData.FirstOrDefault(s => s.ItemUuid == uuid);
+        var item = myDbContext.SearchableData.FirstOrDefault(s => s.SourceUuid == uuid);
         if (item is null) { return; }
         myDbContext.SearchableData.Remove(item);
         myDbContext.SaveChanges();

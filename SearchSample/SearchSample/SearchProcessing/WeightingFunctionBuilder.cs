@@ -1,20 +1,21 @@
-﻿using System;
+﻿using SearchSample.QueryParser;
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace SearchSample.QueryProcessing;
+namespace SearchSample.SearchProcessing;
 
 public class WeightingFunctionBuilder(TokenizerConfig config)
 {
 
-    public Expression<Func<T, int>> CreateExpression<T>(List<string> postfixTokens, Expression<Func<T, string>> propertyAccessor, MethodInfo weightFunction)
+    public Expression<Func<T, int>> CreateExpression<T>(IEnumerable<string> postfixTokens, Expression<Func<T, string>> propertyAccessor, MethodInfo weightFunction)
     {
-        MemberExpression property = (MemberExpression)propertyAccessor.Body;
+        var property = (MemberExpression)propertyAccessor.Body;
         return CreateExpression<T>(postfixTokens, property.Member.Name, weightFunction);
     }
 
-    public Expression<Func<T, int>> CreateExpression<T>(List<string> postfixTokens, string propertyName, MethodInfo weightFunction)
+    public Expression<Func<T, int>> CreateExpression<T>(IEnumerable<string> postfixTokens, string propertyName, MethodInfo weightFunction)
     {
         var stack = new Stack<Expression<Func<T, int>>>();
         var param = Expression.Parameter(typeof(T), "x");

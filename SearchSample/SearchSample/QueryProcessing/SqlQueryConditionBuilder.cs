@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using SearchSample.QueryParser;
+using System.Collections.Generic;
 
 namespace SearchSample.QueryProcessing;
 
 public class SqlQueryConditionBuilder(TokenizerConfig config)
 {
 
-    public string ConvertToSql(List<string> postfixTokens, string columnName)
+    public string ConvertToSql(IEnumerable<string> postfixTokens, string columnName)
     {
         Stack<string> stack = new();
         foreach (var token in postfixTokens)

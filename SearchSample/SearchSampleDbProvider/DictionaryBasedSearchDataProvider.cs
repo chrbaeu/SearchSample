@@ -1,21 +1,22 @@
 ﻿using SearchSample.SearchProcessing;
+using SearchSampleApp.DbDataProvider;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace SearchSample.DataProvider;
 
-public class DictionaryBasedSearchDataProvider : ISearchDataProvider<SearchableData, IReadOnlyCollection<FilterTag>>
+public class DictionaryBasedSearchDataProvider2 : ISearchDataProvider<SearchableDataDo, List<FilterTagDo>>
 {
 
-    private readonly Dictionary<Guid, SearchableData> dataDict = [];
+    private readonly Dictionary<Guid, SearchableDataDo> dataDict = [];
 
-    public IQueryable<SearchableData> GetQueryable()
+    public IQueryable<SearchableDataDo> GetQueryable()
     {
         return dataDict.Values.AsQueryable();
     }
 
-    public void SetItems(ICollection<SearchableData> searchableData)
+    public void SetItems(ICollection<SearchableDataDo> searchableData)
     {
         foreach (var item in searchableData)
         {
@@ -23,7 +24,7 @@ public class DictionaryBasedSearchDataProvider : ISearchDataProvider<SearchableD
         }
     }
 
-    public void SetItem(SearchableData searchableData)
+    public void SetItem(SearchableDataDo searchableData)
     {
         dataDict[searchableData.SourceUuid] = searchableData;
     }

@@ -1,4 +1,5 @@
 ﻿using BenchmarkDotNet.Attributes;
+using SearchSample.QueryParser;
 using SearchSample.QueryProcessing;
 using System;
 using System.Collections.Generic;
@@ -14,7 +15,7 @@ public class OverviewBenchmark
     private readonly QueryStringTokenizer tokenizer = new(config);
     private readonly InfixToPostfixConverter converter = new(config);
     private readonly SqlQueryConditionBuilder sqlQueryConditionBuilder = new(config);
-    private readonly LinqPredicateBuilder predicateBuilder = new(config);
+    private readonly LinqPredicateBuilder predicateBuilder = new(config, StringComparison.OrdinalIgnoreCase);
 
     private readonly string query = "A & B (C | D)";
     private readonly Test[] data = ["ABB", "ABC", "ABD", "ABE", "XBC", "ABB", "ABC", "ABD", "ABE", "XBC"];
@@ -27,7 +28,7 @@ public class OverviewBenchmark
     public OverviewBenchmark()
     {
         tokens = tokenizer.GetTokens(query);
-        postfix = converter.InfixToPostfix(tokens);
+        postfix = converter.InfixToPostfix(tokens).ToList();
         predicate = predicateBuilder.CreateExpression(postfix, (Test x) => x.Text);
         compiledPredicate = predicate.Compile();
     }
@@ -41,7 +42,7 @@ public class OverviewBenchmark
     [Benchmark]
     public List<string> InfixToPostfix()
     {
-        return converter.InfixToPostfix(tokens);
+        return converter.InfixToPostfix(tokens).ToList();
     }
 
     [Benchmark]

@@ -1,9 +1,10 @@
-﻿using System.Linq.Expressions;
+﻿using SearchSample.QueryParser;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace SearchSample.QueryProcessing;
 
-public class SqlitePredicateBuilder(TokenizerConfig config) : PredicateBuilder(config)
+public class SqlitePredicateBuilder(TokenizerConfig config) : SearchPredicateBuilder(config)
 {
 
     private readonly MethodInfo containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!;

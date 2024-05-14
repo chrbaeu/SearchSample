@@ -6,31 +6,41 @@ namespace SearchSample.QueryProcessing;
 
 public partial class SearchWordHighlighter
 {
-
     private readonly Regex? regex;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SearchWordHighlighter"/> class.
+    /// </summary>
+    /// <param name="searchWords">The list of search words.</param>
+    /// <param name="highlightEntireWord">Specifies whether to highlight the entire word or partial matches.</param>
     public SearchWordHighlighter(List<string> searchWords, bool highlightEntireWord = false)
     {
         var pattern = ConvertToRegexPattern(searchWords, highlightEntireWord);
         regex = pattern != null ? new Regex(pattern, RegexOptions.IgnoreCase) : null;
     }
 
-    public SearchWordHighlighter(TokenizerConfig config, List<string> postfixTokens, bool highlightEntireWord = false)
-    {
-        var pattern = ConvertToRegexPattern(GetSearchWords(postfixTokens, config), highlightEntireWord);
-        regex = pattern != null ? new Regex(pattern, RegexOptions.IgnoreCase) : null;
-    }
-
+    /// <summary>
+    /// Highlights the search words in the input text.
+    /// </summary>
+    /// <param name="inputText">The input text.</param>
+    /// <param name="startMarker">The start marker for highlighting.</param>
+    /// <param name="endMarker">The end marker for highlighting.</param>
+    /// <returns>The input text with search words highlighted.</returns>
     public string HighlightText(string inputText, string startMarker = "<b>", string endMarker = "</b>")
     {
         if (string.IsNullOrEmpty(inputText) || regex is null) { return inputText; }
         return regex.Replace(inputText, $"{startMarker}$1{endMarker}");
     }
 
+    /// <summary>
+    /// Enumerates the text parts in the input text and indicates whether each part is a match or not.
+    /// </summary>
+    /// <param name="inputText">The input text.</param>
+    /// <returns>An enumerable of text parts with match indication.</returns>
     public IEnumerable<(string TextPart, bool IsMatch)> EnumerateTextParts(string inputText)
     {
         if (string.IsNullOrEmpty(inputText) || regex is null) { yield return (inputText, false); yield break; }
-        int lastMatchEnd = 0;
+        var lastMatchEnd = 0;
         foreach (Match match in regex.Matches(inputText))
         {
             if (match.Index > lastMatchEnd)
@@ -44,23 +54,6 @@ public partial class SearchWordHighlighter
         {
             yield return (inputText[lastMatchEnd..], false);
         }
-    }
-
-    private static List<string> GetSearchWords(List<string> postfixTokens, TokenizerConfig config)
-    {
-        List<string> searchTerms = [];
-        foreach (var token in postfixTokens)
-        {
-            if (token == config.NotToken)
-            {
-                searchTerms.RemoveAt(searchTerms.Count - 1);
-            }
-            else if (token != config.AndToken && token != config.OrToken)
-            {
-                searchTerms.Add(token);
-            }
-        }
-        return searchTerms;
     }
 
     private static string? ConvertToRegexPattern(List<string> searchWords, bool highlightEntireWord)

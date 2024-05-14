@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SearchSample.QueryParser;
 using System.Linq.Expressions;
 using System.Reflection;
 
 namespace SearchSample.QueryProcessing;
 
-public class SqlServerPredicateBuilder(TokenizerConfig config) : PredicateBuilder(config)
+public class SqlServerPredicateBuilder(TokenizerConfig config) : SearchPredicateBuilder(config)
 {
 
     private readonly MethodInfo containsMethod = typeof(SqlServerDbFunctionsExtensions)
@@ -12,7 +13,7 @@ public class SqlServerPredicateBuilder(TokenizerConfig config) : PredicateBuilde
 
     protected override MethodCallExpression ContainsMethodCallBuilder(MemberExpression property, string token)
     {
-        return Expression.Call(null, containsMethod, Expression.Constant(EF.Functions), property, Expression.Constant(token));
+        return Expression.Call(null, containsMethod, Expression.Constant(EF.Functions), property, Expression.Constant($"\"*{token}*\""));
     }
 
 }

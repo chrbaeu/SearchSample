@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace SearchSample.QueryProcessing;
+namespace SearchSample.QueryParser;
 
-public class InfixToPostfixConverter
+internal sealed class InfixToPostfixConverter
 {
 
     private readonly TokenizerConfig config;
@@ -16,10 +16,9 @@ public class InfixToPostfixConverter
         leftAssociative = new() { { config.NotToken, false }, { config.AndToken, true }, { config.OrToken, true } };
     }
 
-    public List<string> InfixToPostfix(List<string> tokens)
+    public IEnumerable<string> InfixToPostfix(IEnumerable<string> tokens)
     {
         Stack<string> stack = new();
-        List<string> output = [];
         foreach (var token in tokens)
         {
             if (config.IsOperator(token))
@@ -28,7 +27,7 @@ public class InfixToPostfixConverter
                        (leftAssociative[token] && precedence[token] <= precedence[stack.Peek()] ||
                         !leftAssociative[token] && precedence[token] < precedence[stack.Peek()]))
                 {
-                    output.Add(stack.Pop());
+                    yield return stack.Pop();
                 }
                 stack.Push(token);
             }
@@ -40,20 +39,19 @@ public class InfixToPostfixConverter
             {
                 while (stack.Count > 0 && stack.Peek() != config.OpeningBracketToken)
                 {
-                    output.Add(stack.Pop());
+                    yield return stack.Pop();
                 }
                 if (stack.Count > 0) { stack.Pop(); }
             }
             else
             {
-                output.Add(token);
+                yield return token;
             }
         }
         while (stack.Count > 0)
         {
-            output.Add(stack.Pop());
+            yield return stack.Pop();
         }
-        return output;
     }
 
 }

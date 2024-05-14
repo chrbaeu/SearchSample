@@ -3,10 +3,10 @@ using System;
 
 namespace SearchSampleApp.DbDataProvider;
 
-public class FilterTagDo : IFilterTag
+public class FilterTagDo : ISearchFilter
 {
     public long Id { get; set; }
     public Guid ItemUuid { get; set; }
-    public Guid FilterTypeUuid { get; set; }
-    public string Value { get; set; } = "";
+    public int FilterType { get; set; }
+    public long Value { get; set; }
 }

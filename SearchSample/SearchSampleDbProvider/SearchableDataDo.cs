@@ -4,15 +4,15 @@ using System.Collections.Generic;
 
 namespace SearchSampleApp.DbDataProvider;
 
-public class SearchableDataDo : ISearchableData<List<FilterTagDo>>
+public record class SearchableDataDo : ISearchData<List<FilterTagDo>>
 {
-    public SearchableDataDo(Guid itemUuid, string fullText)
+    public SearchableDataDo(Guid sourceUuid, string fullText)
     {
-        ItemUuid = itemUuid;
+        SourceUuid = sourceUuid;
         FullText = fullText;
     }
 
-    public Guid ItemUuid { get; set; } = Guid.Empty;
+    public Guid SourceUuid { get; set; } = Guid.Empty;
     public string FullText { get; set; } = "";
     public virtual List<FilterTagDo> FilterTags { get; set; } = [];
 }
