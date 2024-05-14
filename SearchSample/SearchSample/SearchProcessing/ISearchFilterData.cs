@@ -1,6 +1,6 @@
 ﻿namespace SearchSample.SearchProcessing;
 
-public interface ISearchFilter
+public interface ISearchFilterData
 {
     int FilterType { get; }
     long Value { get; }

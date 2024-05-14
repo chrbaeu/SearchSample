@@ -2,4 +2,4 @@
 
 namespace SearchSample.DataProvider;
 
-public record class FilterTag(int FilterType, long Value) : ISearchFilter { }
+public record class FilterTag(int FilterType, long Value) : ISearchFilterData { }

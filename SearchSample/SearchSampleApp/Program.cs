@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 using SearchSample.DataProvider;
 using SearchSample.QueryParser;
 using SearchSample.QueryProcessing;
@@ -26,7 +27,7 @@ internal class Program
         searchQueryParser.SynonymHandler.AddSynonym("Grün", "Green");
         var postfixTokens = searchQueryParser.ParseToPostfixTokens(query);
 
-        LinqPredicateBuilder predicateBuilder = new(searchQueryParser.TokenizerConfig, StringComparison.OrdinalIgnoreCase);
+        LinqPredicateBuilder predicateBuilder = new(searchQueryParser.TokenizerConfig);
         var predicate = predicateBuilder.CreateExpression(postfixTokens, (SimpleItem x) => x.Text);
         var compiledPredicate = predicate.Compile();
 
@@ -41,16 +42,16 @@ internal class Program
 
         var searchRequest = new SearchRequest("senkrecht bis");// { SearchFilters = [new SearchFilter(Guid.Empty, "B")] };
 
-        RunInMemorySample(searchQueryParser.TokenizerConfig, searchRequest);
+        RunInMemorySample(searchQueryParser, searchRequest);
 
-        RunSqliteDbSample(searchQueryParser.TokenizerConfig, searchRequest);
+        RunSqliteDbSample(searchQueryParser, searchRequest);
 
-        //RunSqlServerDb(searchQueryParser.TokenizerConfig, searchRequest);
+        //RunSqlServerDb(searchQueryParser, searchRequest);
     }
 
-    private static void RunInMemorySample(TokenizerConfig config, SearchRequest searchRequest)
+    private static void RunInMemorySample(SearchQueryParser config, SearchRequest searchRequest)
     {
-        SearchService<SearchableData, IReadOnlyCollection<FilterTag>> searchService = new(config, new LinqPredicateBuilder(config, StringComparison.Ordinal));
+        SearchService<SearchableData, IReadOnlyCollection<FilterTag>> searchService = new(config);
 
         var data = JsonSerializer.Deserialize<List<SearchableData>>(File.ReadAllText("items.json"))!;
         //File.WriteAllText("items.json", JsonSerializer.Serialize(data));
@@ -66,9 +67,11 @@ internal class Program
         Console.WriteLine($"Time (InMemory): {time.Milliseconds}ms Matches: {searchResult.Count}");
     }
 
-    private static void RunSqliteDbSample(TokenizerConfig config, SearchRequest searchRequest)
+    private static void RunSqliteDbSample(SearchQueryParser config, SearchRequest searchRequest)
     {
-        SearchService<SearchableDataDo, List<FilterTagDo>> searchService = new(config, new SqlitePredicateBuilder(config));
+        QueryableSearchExtensions.AddPredicateBuilder<EntityQueryProvider, SqlitePredicateBuilder>();
+
+        SearchService<SearchableDataDo, List<FilterTagDo>> searchService = new(config);
         File.Delete("TestDb.db");
         var options = new DbContextOptionsBuilder<SearchSampleDbContext>()
             .UseSqlite("Data Source=TestDb.db")
@@ -90,9 +93,9 @@ internal class Program
         Console.WriteLine($"Time (Sqlite): {time.Milliseconds}ms Matches: {searchResult.Count}");
     }
 
-    private static void RunSqlServerDb(TokenizerConfig config, SearchRequest searchRequest)
+    private static void RunSqlServerDb(SearchQueryParser config, SearchRequest searchRequest)
     {
-        SearchService<SearchableDataDo, List<FilterTagDo>> searchService = new(config, new SqlServerPredicateBuilder(config));
+        SearchService<SearchableDataDo, List<FilterTagDo>> searchService = new(config);
         var options = new DbContextOptionsBuilder<SearchSampleDbContext>()
             .UseSqlServer("")
             .Options;

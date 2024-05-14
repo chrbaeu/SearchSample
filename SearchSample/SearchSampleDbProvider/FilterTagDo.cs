@@ -3,7 +3,7 @@ using System;
 
 namespace SearchSampleApp.DbDataProvider;
 
-public class FilterTagDo : ISearchFilter
+public class FilterTagDo : ISearchFilterData
 {
     public long Id { get; set; }
     public Guid ItemUuid { get; set; }
