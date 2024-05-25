@@ -1,7 +1,6 @@
-﻿namespace SearchSampleLuceneProvider;
-
-using Lucene.Net.Analysis;
+﻿using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
+using Lucene.Net.Analysis.Util;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
@@ -15,27 +14,30 @@ using System.IO;
 using System.Linq;
 using Directory = Lucene.Net.Store.Directory;
 
+namespace SearchSampleLuceneProvider;
+
 public class LuceneSearchService : IDisposable, ILuceneSearchService
 {
-    private readonly SearchQueryParser searchQueryParser;
+    public SearchQueryParser SearchQueryParser { get; }
+
     private readonly Directory directory;
     private readonly Analyzer analyzer;
     private readonly IndexWriter writer;
     private readonly LuceneQueryConditionBuilder luceneQueryConditionBuilder;
 
-    public LuceneSearchService() : this(new(), new RAMDirectory()) { }
+    public LuceneSearchService() : this(new SearchQueryParser(), new RAMDirectory()) { }
     public LuceneSearchService(SearchQueryParser searchQueryParser) : this(searchQueryParser, new RAMDirectory()) { }
 
-    public LuceneSearchService(DirectoryInfo directoryInfo) : this(new(), FSDirectory.Open(directoryInfo.FullName)) { }
+    public LuceneSearchService(DirectoryInfo directoryInfo) : this(new SearchQueryParser(), FSDirectory.Open(directoryInfo.FullName)) { }
     public LuceneSearchService(SearchQueryParser searchQueryParser, DirectoryInfo directoryInfo) : this(searchQueryParser, FSDirectory.Open(directoryInfo.FullName)) { }
 
     private LuceneSearchService(SearchQueryParser searchQueryParser, Directory directory)
     {
-        this.searchQueryParser = searchQueryParser;
+        this.SearchQueryParser = searchQueryParser;
         this.directory = directory;
-        analyzer = new StandardAnalyzer(LuceneVersion.LUCENE_48);
+        analyzer = new StandardAnalyzer(LuceneVersion.LUCENE_48, CharArraySet.EMPTY_SET);
         writer = new IndexWriter(this.directory, new IndexWriterConfig(LuceneVersion.LUCENE_48, analyzer));
-        luceneQueryConditionBuilder = new(searchQueryParser.TokenizerConfig, [
+        luceneQueryConditionBuilder = new(((SearchQueryParser)SearchQueryParser).TokenizerConfig, [
                 (nameof(SearchableDocument.Title), 2),
                 (nameof(SearchableDocument.FullText), 1)
             ]);
@@ -92,28 +94,30 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         writer.Commit();
     }
 
-    public IList<string> FindUuids(SearchRequest searchRequest, int maxResults = 100)
+    public IList<Guid> FindUuids(SearchRequest searchRequest, int maxResults = 100)
     {
-        var tokens = searchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
+        var tokens = SearchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
         var query = luceneQueryConditionBuilder.ConvertToLuceneQuery(tokens);
         query = ApplyFiltersToQuery(query, searchRequest.SearchFilters);
+        if (query is null) { return []; }
         return FindUuids(query, maxResults);
     }
 
     public IList<SearchableDocument> FindSearchableDocuments(SearchRequest searchRequest, int maxResults = 100)
     {
-        var tokens = searchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
+        var tokens = SearchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
         var query = luceneQueryConditionBuilder.ConvertToLuceneQuery(tokens);
         query = ApplyFiltersToQuery(query, searchRequest.SearchFilters);
+        if (query is null) { return []; }
         return FindSearchableDocuments(query, maxResults);
     }
 
-    public IList<string> FindUuids(Query query, int maxResults = 100)
+    public IList<Guid> FindUuids(Query query, int maxResults = 100)
     {
         using var reader = DirectoryReader.Open(directory);
         var searcher = new IndexSearcher(reader);
         var hits = searcher.Search(query, maxResults).ScoreDocs;
-        return hits.Select(hit => searcher.Doc(hit.Doc).Get(nameof(SearchableDocument.Uuid))).ToList();
+        return hits.Select(hit => Guid.Parse(searcher.Doc(hit.Doc).Get(nameof(SearchableDocument.Uuid)))).ToList();
     }
 
     public IList<SearchableDocument> FindSearchableDocuments(Query query, int maxResults = 100)
@@ -131,10 +135,14 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         directory?.Dispose();
     }
 
-    private Query ApplyFiltersToQuery(Query baseQuery, IEnumerable<SearchFilter> filters)
+    private Query? ApplyFiltersToQuery(Query? baseQuery, IEnumerable<SearchFilter> filters)
     {
         if (filters == null || !filters.Any()) { return baseQuery; }
-        var booleanQuery = new BooleanQuery { { baseQuery, Occur.MUST } };
+        var booleanQuery = new BooleanQuery();
+        if (baseQuery is not null)
+        {
+            booleanQuery.Add(baseQuery, Occur.MUST);
+        }
         foreach (var filter in filters)
         {
             if (filter.Values != null && filter.Values.Count != 0)
@@ -173,7 +181,7 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         var fullText = doc.Get(nameof(SearchableDocument.FullText));
         var filterableItems = doc.Fields
             .Where(f => f.Name.StartsWith("FilterableItem_"))
-            .Select(f => new FilterableItem
+            .Select(f => (FilterableItem)new FilterableItem
             {
                 Category = f.Name["FilterableItem_".Length..],
                 Value = f.GetStringValue()

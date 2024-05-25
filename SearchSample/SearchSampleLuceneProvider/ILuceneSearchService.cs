@@ -12,6 +12,6 @@ public interface ILuceneSearchService : IDisposable
     public void Update(IEnumerable<SearchableDocument> searchableDocuments);
     public void Delete(Guid uuid);
     public void Delete(IEnumerable<Guid> uuids);
-    public IList<string> FindUuids(SearchRequest searchRequest, int maxResults = 100);
+    public IList<Guid> FindUuids(SearchRequest searchRequest, int maxResults = 100);
     public IList<SearchableDocument> FindSearchableDocuments(SearchRequest searchRequest, int maxResults = 100);
 }

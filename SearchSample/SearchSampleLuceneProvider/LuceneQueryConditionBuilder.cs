@@ -2,6 +2,7 @@
 using Lucene.Net.Search;
 using SearchSample.QueryParser;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SearchSampleLuceneProvider;
 
@@ -16,7 +17,7 @@ public class LuceneQueryConditionBuilder
         this.matchFields = matchFields;
     }
 
-    public Query ConvertToLuceneQuery(IEnumerable<string> postfixTokens)
+    public Query? ConvertToLuceneQuery(IEnumerable<string> postfixTokens)
     {
         Stack<Query> stack = new();
         foreach (var token in postfixTokens)
@@ -55,12 +56,25 @@ public class LuceneQueryConditionBuilder
                 var booleanQuery = new BooleanQuery();
                 foreach (var (fieldName, boost) in matchFields)
                 {
-                    var fieldQuery = new WildcardQuery(new Term(fieldName, $"*{token}*")) { Boost = boost };
+                    Query fieldQuery;
+                    if (token[0] == '"' && token[0] == token[^1])
+                    {
+                        fieldQuery = new TermQuery(new Term(fieldName, token.Trim('"'))) { Boost = boost };
+                    }
+                    else if (token[0] == '~' && token[0] == token[^1])
+                    {
+                        fieldQuery = new FuzzyQuery(new Term(fieldName, token.Trim('~')), token.Count(x => x == '~') - 1) { Boost = boost / 2 };
+                    }
+                    else
+                    {
+                        fieldQuery = new WildcardQuery(new Term(fieldName, $"*{token}*")) { Boost = boost };
+                    }
                     booleanQuery.Add(fieldQuery, Occur.SHOULD);
                 }
                 stack.Push(booleanQuery);
             }
         }
+        if (stack.Count == 0) { return null; }
         return stack.Pop();
     }
 

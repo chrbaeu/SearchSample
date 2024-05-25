@@ -12,6 +12,10 @@ public class LinqPredicateBuilder(TokenizerConfig config) : SearchPredicateBuild
 
     protected override MethodCallExpression ContainsMethodCallBuilder(MemberExpression property, string token)
     {
+        if (token[0] == '"' && token[0] == token[^1])
+        {
+            token = token.Trim('"');
+        }
         return Expression.Call(property, containsMethod, Expression.Constant(token), Expression.Constant(StringComparison.OrdinalIgnoreCase));
     }
 

@@ -23,6 +23,12 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
                 if (config.SegmentChars.Contains(c))
                 {
                     isSegment = false;
+                    if (sb.Length == 1)
+                    {
+                        sb.Length = 0;
+                        continue;
+                    }
+                    sb.Append(config.SegmentToken);
                     FinishToken();
                 }
                 else
@@ -37,6 +43,7 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
             else if (config.SegmentChars.Contains(c))
             {
                 isSegment = true;
+                sb.Append(config.SegmentToken);
             }
             else if (config.WhiteSpaceChars.Contains(c))
             {
@@ -76,12 +83,14 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
             else if (config.AndOperatorChars.Contains(c))
             {
                 FinishToken();
+                RemoveLastIfNoOp();
                 tokens.Add(config.AndToken);
                 lastWasNoOp = false;
             }
             else if (config.OrOperatorChars.Contains(c))
             {
                 FinishToken();
+                RemoveLastIfNoOp();
                 tokens.Add(config.OrToken);
                 lastWasNoOp = false;
             }
@@ -91,10 +100,7 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
             }
         }
         FinishToken();
-        if (!lastWasNoOp && tokens.Count > 0 && tokens[^1] != config.ClosingBracketToken)
-        {
-            tokens.RemoveAt(tokens.Count - 1);
-        }
+        RemoveLastIfNoOp();
         return tokens;
         void FinishToken()
         {
@@ -108,9 +114,20 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
         }
         void InsertDefaultOpIfNeeded()
         {
-            if (lastWasNoOp && config.DefaultOpToken is not null)
+            if (config.DefaultOpToken is null)
+            {
+                return;
+            }
+            if (lastWasNoOp || (tokens.Count > 0 && tokens[^1] == config.ClosingBracketToken))
             {
                 tokens.Add(config.DefaultOpToken);
+            }
+        }
+        void RemoveLastIfNoOp()
+        {
+            if (!lastWasNoOp && tokens.Count > 0 && tokens[^1] != config.ClosingBracketToken)
+            {
+                tokens.RemoveAt(tokens.Count - 1);
             }
         }
     }
