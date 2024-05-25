@@ -46,42 +46,42 @@ public static class QueryableSearchExtensions
         return queryable.Where(predicate);
     }
 
-    public static IQueryable<TSearchData> SearchByFilters<TSearchData, TFilterDataCollection>(this IQueryable<TSearchData> queryable,
+    public static IQueryable<TSearchData> SearchByFilters<TSearchData, TSearchDataFilterCollection>(this IQueryable<TSearchData> queryable,
         IEnumerable<SearchFilter> searchFilters)
-        where TSearchData : ISearchData<TFilterDataCollection>
-        where TFilterDataCollection : IEnumerable<ISearchFilterData>
+        where TSearchData : ISearchData<TSearchDataFilterCollection>
+        where TSearchDataFilterCollection : IEnumerable<ISearchFilterData>
     {
         foreach (var filter in searchFilters)
         {
             if (filter.Values.Count == 1)
             {
                 var filterValue = filter.Values.First();
-                queryable = queryable.Where(x => x.FilterTags.Any(y => y.FilterType == filter.FilterType && y.Value == filterValue));
+                queryable = queryable.Where(x => x.SearchFilters.Any(y => y.Category == filter.Category && y.Value == filterValue));
             }
             else
             {
-                queryable = queryable.Where(x => x.FilterTags.Any(y => y.FilterType == filter.FilterType && filter.Values.Contains(y.Value)));
+                queryable = queryable.Where(x => x.SearchFilters.Any(y => y.Category == filter.Category && filter.Values.Contains(y.Value)));
             }
         }
         return queryable;
     }
 
-    public static IQueryable<TSearchData> Search<TSearchData, TFilterDataCollection>(this IQueryable<TSearchData> queryable,
+    public static IQueryable<TSearchData> Search<TSearchData, TSearchDataFilterCollection>(this IQueryable<TSearchData> queryable,
         SearchRequest searchRequest, SearchQueryParser searchQueryParser)
-        where TSearchData : ISearchData<TFilterDataCollection>
-        where TFilterDataCollection : IEnumerable<ISearchFilterData>
+        where TSearchData : ISearchData<TSearchDataFilterCollection>
+        where TSearchDataFilterCollection : IEnumerable<ISearchFilterData>
     {
         queryable = SearchByQueryString(queryable, x => x.FullText, searchRequest.SearchQuery, searchQueryParser);
-        queryable = SearchByFilters<TSearchData, TFilterDataCollection>(queryable, searchRequest.SearchFilters);
+        queryable = SearchByFilters<TSearchData, TSearchDataFilterCollection>(queryable, searchRequest.SearchFilters);
         return queryable;
     }
 
-    public static IEnumerable<TSearchData> WeightedSearch<TSearchData, TFilterDataCollection>(this IQueryable<TSearchData> queryable,
+    public static IEnumerable<TSearchData> WeightedSearch<TSearchData, TSearchDataFilterCollection>(this IQueryable<TSearchData> queryable,
         SearchRequest searchRequest, SearchQueryParser searchQueryParser)
-        where TSearchData : ISearchData<TFilterDataCollection>
-        where TFilterDataCollection : IEnumerable<ISearchFilterData>
+        where TSearchData : ISearchData<TSearchDataFilterCollection>
+        where TSearchDataFilterCollection : IEnumerable<ISearchFilterData>
     {
-        var query = Search<TSearchData, TFilterDataCollection>(queryable, searchRequest, searchQueryParser);
+        var query = Search<TSearchData, TSearchDataFilterCollection>(queryable, searchRequest, searchQueryParser);
         MethodInfo methodInfo = typeof(QueryableSearchExtensions).GetMethod(nameof(CountMatchesInFirstLine), BindingFlags.Static | BindingFlags.NonPublic)!;
         var postfixTokens = searchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
         var weightingFunctionBuilder = new LinqWeightingFunctionBuilder(searchQueryParser.TokenizerConfig);

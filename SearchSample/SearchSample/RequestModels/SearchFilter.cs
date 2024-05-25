@@ -6,18 +6,18 @@ public record class SearchFilter
 {
     public SearchFilter() { }
 
-    public SearchFilter(int filterType, long value)
+    public SearchFilter(string category, string value)
     {
-        FilterType = filterType;
+        Category = category;
         Values = [value];
     }
 
-    public SearchFilter(int filterType, List<long> values)
+    public SearchFilter(string category, List<string> values)
     {
-        FilterType = filterType;
+        Category = category;
         Values = values;
     }
 
-    public int FilterType { get; init; }
-    public IReadOnlyCollection<long> Values { get; init; } = [];
+    public string Category { get; init; } = "";
+    public IReadOnlyCollection<string> Values { get; init; } = [];
 }

@@ -6,13 +6,13 @@ namespace SearchSampleApp.DbDataProvider;
 
 public record class SearchableDataDo : ISearchData<List<FilterTagDo>>
 {
-    public SearchableDataDo(Guid sourceUuid, string fullText)
+    public SearchableDataDo(Guid uuid, string fullText)
     {
-        SourceUuid = sourceUuid;
+        Uuid = uuid;
         FullText = fullText;
     }
 
-    public Guid SourceUuid { get; set; } = Guid.Empty;
+    public Guid Uuid { get; set; } = Guid.Empty;
     public string FullText { get; set; } = "";
-    public virtual List<FilterTagDo> FilterTags { get; set; } = [];
+    public virtual List<FilterTagDo> SearchFilters { get; set; } = [];
 }

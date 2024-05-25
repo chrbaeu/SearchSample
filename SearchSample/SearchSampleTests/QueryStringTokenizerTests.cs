@@ -14,8 +14,9 @@ public class QueryStringTokenizerTests
     [InlineData("Test1 Test2", "Test1_&_Test2")]
     [InlineData("Test1 & Test2", "Test1_&_Test2")]
     [InlineData("Test1 | Test2", "Test1_|_Test2")]
-    [InlineData("Test1 & \"Test2 & Test3\"", "Test1_&_Test2 & Test3")]
-    public void SimpleTests(string query, string result)
+    [InlineData("Test1 & \"Test2 Test3\"", "Test1_&_Test2 Test3")]
+    [InlineData("Test1 & (Test2 | Test3)", "Test1_&_(_Test2_|_Test3_)")]
+    public void GetTokensTest(string query, string result)
     {
         var tokens = stringTokenizer.GetTokens(query);
 

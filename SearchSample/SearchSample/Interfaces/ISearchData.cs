@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace SearchSample.Interfaces;
 
-public interface ISearchData<TFilterTagCollection> where TFilterTagCollection : IEnumerable<ISearchFilterData>
+public interface ISearchData<TSearchFilterData> where TSearchFilterData : IEnumerable<ISearchFilterData>
 {
-    Guid SourceUuid { get; }
+    Guid Uuid { get; }
     string FullText { get; }
-    TFilterTagCollection FilterTags { get; }
+    TSearchFilterData SearchFilters { get; }
 }

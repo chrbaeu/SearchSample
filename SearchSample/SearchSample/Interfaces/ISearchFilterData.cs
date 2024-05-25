@@ -2,6 +2,6 @@
 
 public interface ISearchFilterData
 {
-    int FilterType { get; }
-    long Value { get; }
+    string Category { get; }
+    string Value { get; }
 }

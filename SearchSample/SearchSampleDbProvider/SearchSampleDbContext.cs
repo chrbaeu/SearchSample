@@ -14,14 +14,14 @@ public class SearchSampleDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<SearchableDataDo>()
-            .HasKey(s => s.SourceUuid);
+            .HasKey(s => s.Uuid);
 
         modelBuilder.Entity<SearchableDataDo>()
-            .Property(s => s.SourceUuid)
+            .Property(s => s.Uuid)
             .IsRequired();
 
         modelBuilder.Entity<SearchableDataDo>()
-            .HasMany(s => s.FilterTags)
+            .HasMany(s => s.SearchFilters)
             .WithOne()
             .HasForeignKey(f => f.ItemUuid);
 
@@ -33,7 +33,7 @@ public class SearchSampleDbContext : DbContext
             .IsRequired();
 
         modelBuilder.Entity<FilterTagDo>()
-            .Property(f => f.FilterType)
+            .Property(f => f.Category)
             .IsRequired();
 
         modelBuilder.Entity<FilterTagDo>()
