@@ -1,135 +1,206 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace SearchSample.QueryParser;
 
 internal sealed class QueryStringTokenizer(TokenizerConfig config)
 {
+    private class TokenizerState(string query)
+    {
+        public ReadOnlyMemory<char> Query = query.AsMemory();
+        public int Index;
+        public bool IsSegment;
+        public StringBuilder StringBuilder = new();
+        public List<string> Tokens = [];
+    }
 
     public List<string> GetTokens(string queryString)
     {
-        List<string> tokens = [];
-        if (string.IsNullOrWhiteSpace(queryString)) { return tokens; }
-        var span = queryString.AsSpan();
-        bool isSegment = false, lastWasNoOp = false;
-        StringBuilder sb = new(queryString.Length);
-        for (var i = 0; i < span.Length; i++)
+        if (string.IsNullOrWhiteSpace(queryString)) { return []; }
+        TokenizerState tokenizerState = new(queryString);
+        var span = tokenizerState.Query.Span;
+        for (; tokenizerState.Index < tokenizerState.Query.Length; tokenizerState.Index++)
         {
-            var c = span[i];
-            if (isSegment)
+            char currentChar = span[tokenizerState.Index];
+            if (tokenizerState.IsSegment)
             {
-                if (config.SegmentChars.Contains(c))
-                {
-                    isSegment = false;
-                    if (sb.Length == 1)
-                    {
-                        sb.Length = 0;
-                        continue;
-                    }
-                    sb.Append(config.SegmentToken);
-                    FinishToken();
-                }
-                else
-                {
-                    sb.Append(c);
-                }
-            }
-            else if (config.EscapeChars.Contains(c))
-            {
-                i++;
-            }
-            else if (config.SegmentChars.Contains(c))
-            {
-                isSegment = true;
-                sb.Append(config.SegmentToken);
-            }
-            else if (config.WhiteSpaceChars.Contains(c))
-            {
-                FinishToken();
-            }
-            else if (config.OpeningBracketChars.Contains(c))
-            {
-                FinishToken();
-                InsertDefaultOpIfNeeded();
-                tokens.Add(config.OpeningBracketToken);
-                lastWasNoOp = false;
-            }
-            else if (config.ClosingBracketChars.Contains(c))
-            {
-                FinishToken();
-                if (tokens.Where(x => x == config.OpeningBracketToken).Count() > tokens.Where(x => x == config.ClosingBracketToken).Count())
-                {
-                    if (!lastWasNoOp)
-                    {
-                        if (tokens.Count > 0 && tokens[^1] == config.OpeningBracketToken)
-                        {
-                            tokens.RemoveAt(tokens.Count - 1);
-                            continue;
-                        }
-                        tokens.RemoveAt(tokens.Count - 1);
-                    }
-                    tokens.Add(config.ClosingBracketToken);
-                    lastWasNoOp = false;
-                }
-            }
-            else if (config.NotOperatorChars.Contains(c))
-            {
-                FinishToken();
-                tokens.Add(config.NotToken);
-                lastWasNoOp = false;
-            }
-            else if (config.AndOperatorChars.Contains(c))
-            {
-                FinishToken();
-                RemoveLastIfNoOp();
-                tokens.Add(config.AndToken);
-                lastWasNoOp = false;
-            }
-            else if (config.OrOperatorChars.Contains(c))
-            {
-                FinishToken();
-                RemoveLastIfNoOp();
-                tokens.Add(config.OrToken);
-                lastWasNoOp = false;
+                ProcessSegment(tokenizerState, currentChar);
             }
             else
             {
-                sb.Append(c);
+                ProcessChar(tokenizerState, currentChar);
             }
         }
-        FinishToken();
-        RemoveLastIfNoOp();
-        return tokens;
-        void FinishToken()
+        FinishToken(tokenizerState);
+        return FixTokens(tokenizerState.Tokens);
+    }
+
+    private void ProcessSegment(TokenizerState tokenizerState, char c)
+    {
+        if (config.SegmentChars.Contains(c))
         {
-            if (sb.Length > 0)
+            tokenizerState.IsSegment = false;
+            if (tokenizerState.StringBuilder.Length == 1)
             {
-                InsertDefaultOpIfNeeded();
-                tokens.Add(sb.ToString());
-                sb.Length = 0;
-                lastWasNoOp = true;
-            }
-        }
-        void InsertDefaultOpIfNeeded()
-        {
-            if (config.DefaultOpToken is null)
-            {
+                // Skip empty segment
+                tokenizerState.StringBuilder.Length = 0;
                 return;
             }
-            if (lastWasNoOp || (tokens.Count > 0 && tokens[^1] == config.ClosingBracketToken))
-            {
-                tokens.Add(config.DefaultOpToken);
-            }
+            tokenizerState.StringBuilder.Append(config.SegmentToken);
+            FinishToken(tokenizerState);
         }
-        void RemoveLastIfNoOp()
+        else
         {
-            if (!lastWasNoOp && tokens.Count > 0 && tokens[^1] != config.ClosingBracketToken)
+            tokenizerState.StringBuilder.Append(c);
+        }
+    }
+
+    private void ProcessChar(TokenizerState tokenizerState, char c)
+    {
+        if (config.EscapeChars.Contains(c))
+        {
+            tokenizerState.Index++;
+            tokenizerState.StringBuilder.Append(tokenizerState.Query.Span[tokenizerState.Index]);
+        }
+        else if (config.SegmentChars.Contains(c))
+        {
+            tokenizerState.IsSegment = true;
+            tokenizerState.StringBuilder.Append(config.SegmentToken);
+        }
+        else if (config.WhiteSpaceChars.Contains(c))
+        {
+            FinishToken(tokenizerState);
+        }
+        else if (config.OpeningBracketChars.Contains(c))
+        {
+            FinishToken(tokenizerState);
+            tokenizerState.Tokens.Add(config.OpeningBracketToken);
+        }
+        else if (config.ClosingBracketChars.Contains(c))
+        {
+            FinishToken(tokenizerState);
+            tokenizerState.Tokens.Add(config.ClosingBracketToken);
+        }
+        else if (config.NotOperatorChars.Contains(c))
+        {
+            FinishToken(tokenizerState);
+            tokenizerState.Tokens.Add(config.NotToken);
+        }
+        else if (config.AndOperatorChars.Contains(c))
+        {
+            FinishToken(tokenizerState);
+            tokenizerState.Tokens.Add(config.AndToken);
+        }
+        else if (config.OrOperatorChars.Contains(c))
+        {
+            FinishToken(tokenizerState);
+            tokenizerState.Tokens.Add(config.OrToken);
+        }
+        else
+        {
+            tokenizerState.StringBuilder.Append(c);
+        }
+    }
+
+    private static void FinishToken(TokenizerState tokenizerState)
+    {
+        if (tokenizerState.StringBuilder.Length > 0)
+        {
+            tokenizerState.Tokens.Add(tokenizerState.StringBuilder.ToString());
+            tokenizerState.StringBuilder.Length = 0;
+        }
+    }
+
+    private List<string> FixTokens(IEnumerable<string> srcTokens)
+    {
+        List<string> tokens = [];
+        int openBrackets = 0;
+        bool lastWasOperator = true;
+        foreach (var srcToken in srcTokens)
+        {
+            var token = srcToken;
+            if (config.OperatorWords.TryGetValue(token, out var opToken))
             {
-                tokens.RemoveAt(tokens.Count - 1);
+                token = opToken;
+            }
+            if (token == config.OpeningBracketToken)
+            {
+                if (!lastWasOperator && config.DefaultOpToken is not null)
+                {
+                    tokens.Add(config.DefaultOpToken);
+                }
+                openBrackets++;
+                lastWasOperator = true;
+                tokens.Add(token);
+            }
+            else if (token == config.ClosingBracketToken)
+            {
+                if (openBrackets == 0)
+                {
+                    // Skip closing brackets without matching opening bracket
+                    continue;
+                }
+                if (lastWasOperator)
+                {
+                    if (tokens[^1] == config.OpeningBracketToken)
+                    {
+                        // Skip empty brackets
+                        tokens.RemoveAt(tokens.Count - 1);
+                        openBrackets--;
+                        lastWasOperator = config.IsOperator(tokens[^1]);
+                        continue;
+                    }
+                    // Remove last operator because it's not valid
+                    tokens.RemoveAt(tokens.Count - 1);
+                    if (tokens.Count > 0 && tokens[^1] == config.OpeningBracketToken)
+                    {
+                        // Skip empty brackets
+                        tokens.RemoveAt(tokens.Count - 1);
+                        openBrackets--;
+                        lastWasOperator = config.IsOperator(tokens[^1]);
+                        continue;
+                    }
+                }
+                openBrackets--;
+                lastWasOperator = false;
+                tokens.Add(token);
+
+            }
+            else if (token == config.NotToken)
+            {
+                if (lastWasOperator && tokens.Count > 0 && tokens[^1] == config.NotToken)
+                {
+                    continue; // Skip consecutive not operators
+                }
+                lastWasOperator = true;
+                tokens.Add(token);
+            }
+            else if (token == config.AndToken || token == config.OrToken)
+            {
+                if (lastWasOperator)
+                {
+                    continue; // Skip consecutive operators
+                }
+                lastWasOperator = true;
+                tokens.Add(token);
+            }
+            else
+            {
+                if (!lastWasOperator && config.DefaultOpToken is not null)
+                {
+                    tokens.Add(config.DefaultOpToken);
+                }
+                lastWasOperator = false;
+                tokens.Add(token);
             }
         }
+        while (tokens.Count > 0 && (config.IsOperator(tokens[^1]) || tokens[^1] == config.OpeningBracketToken))
+        {
+            // Remove last operator because it's not valid
+            tokens.RemoveAt(tokens.Count - 1);
+        }
+        return tokens;
     }
 
 }
