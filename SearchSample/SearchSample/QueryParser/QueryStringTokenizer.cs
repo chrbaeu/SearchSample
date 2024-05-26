@@ -6,6 +6,8 @@ namespace SearchSample.QueryParser;
 
 internal sealed class QueryStringTokenizer(TokenizerConfig config)
 {
+    readonly string emptySegment = config.SegmentToken + config.SegmentToken;
+
     private class TokenizerState(string query)
     {
         public ReadOnlyMemory<char> Query = query.AsMemory();
@@ -25,35 +27,28 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
             char currentChar = span[tokenizerState.Index];
             if (tokenizerState.IsSegment)
             {
-                ProcessSegment(tokenizerState, currentChar);
+                if (config.SegmentChars.Contains(currentChar))
+                {
+                    tokenizerState.IsSegment = false;
+                    tokenizerState.StringBuilder.Append(config.SegmentToken);
+                    FinishToken(tokenizerState);
+                }
+                else
+                {
+                    tokenizerState.StringBuilder.Append(currentChar);
+                }
             }
             else
             {
                 ProcessChar(tokenizerState, currentChar);
             }
         }
+        if (tokenizerState.IsSegment)
+        {
+            tokenizerState.StringBuilder.Append(config.SegmentToken);
+        }
         FinishToken(tokenizerState);
         return FixTokens(tokenizerState.Tokens);
-    }
-
-    private void ProcessSegment(TokenizerState tokenizerState, char c)
-    {
-        if (config.SegmentChars.Contains(c))
-        {
-            tokenizerState.IsSegment = false;
-            if (tokenizerState.StringBuilder.Length == 1)
-            {
-                // Skip empty segment
-                tokenizerState.StringBuilder.Length = 0;
-                return;
-            }
-            tokenizerState.StringBuilder.Append(config.SegmentToken);
-            FinishToken(tokenizerState);
-        }
-        else
-        {
-            tokenizerState.StringBuilder.Append(c);
-        }
     }
 
     private void ProcessChar(TokenizerState tokenizerState, char c)
@@ -187,6 +182,10 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
             }
             else
             {
+                if (token == emptySegment)
+                {
+                    continue; // Skip empty segment
+                }
                 if (!lastWasOperator && config.DefaultOpToken is not null)
                 {
                     tokens.Add(config.DefaultOpToken);

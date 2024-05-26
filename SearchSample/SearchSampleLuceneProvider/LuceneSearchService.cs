@@ -59,6 +59,16 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         writer.Commit();
     }
 
+    public bool Exists(Guid uuid)
+    {
+        var term = new Term(nameof(SearchableDocument.Uuid), uuid.ToString());
+        using var reader = DirectoryReader.Open(directory);
+        var searcher = new IndexSearcher(reader);
+        var query = new TermQuery(term);
+        var hits = searcher.Search(query, 1).ScoreDocs;
+        return hits.Length > 0;
+    }
+
     public void Update(SearchableDocument searchableDocument)
     {
         var term = new Term(nameof(SearchableDocument.Uuid), searchableDocument.Uuid.ToString());
@@ -126,6 +136,36 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         var searcher = new IndexSearcher(reader);
         var hits = searcher.Search(query, maxResults).ScoreDocs;
         return hits.Select(hit => MapToSearchableDocument(searcher.Doc(hit.Doc))).ToList();
+    }
+
+    public IList<Guid> GetAllKeys()
+    {
+        try
+        {
+            using var reader = DirectoryReader.Open(directory);
+            var searcher = new IndexSearcher(reader);
+            var hits = searcher.Search(new MatchAllDocsQuery(), int.MaxValue).ScoreDocs;
+            return hits.Select(hit => Guid.Parse(searcher.Doc(hit.Doc).Get(nameof(SearchableDocument.Uuid)))).ToList();
+        }
+        catch (IndexNotFoundException)
+        {
+            return [];
+        }
+    }
+
+    public IList<SearchableDocument> GetAllDocuments()
+    {
+        try
+        {
+            using var reader = DirectoryReader.Open(directory);
+            var searcher = new IndexSearcher(reader);
+            var hits = searcher.Search(new MatchAllDocsQuery(), int.MaxValue).ScoreDocs;
+            return hits.Select(hit => MapToSearchableDocument(searcher.Doc(hit.Doc))).ToList();
+        }
+        catch (IndexNotFoundException)
+        {
+            return [];
+        }
     }
 
     public void Dispose()
