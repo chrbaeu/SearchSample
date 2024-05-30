@@ -58,9 +58,9 @@ public class LuceneQueryConditionBuilder
                 foreach (var (fieldName, boost) in matchFields)
                 {
                     Query fieldQuery;
-                    if (token[0] == '"' && token[0] == token[^1])
+                    if (token[0] == config.SegmentToken[0] && token[0] == token[^1])
                     {
-                        fieldQuery = new TermQuery(new Term(fieldName, token.Trim('"'))) { Boost = boost };
+                        fieldQuery = new TermQuery(new Term(fieldName, token.Trim(config.SegmentToken[0]))) { Boost = boost };
                     }
                     else if (token[0] == '~' && token[0] == token[^1])
                     {

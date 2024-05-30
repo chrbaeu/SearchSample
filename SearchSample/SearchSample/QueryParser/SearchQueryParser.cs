@@ -56,7 +56,14 @@ public class SearchQueryParser
             }
             else if (token != TokenizerConfig.AndToken && token != TokenizerConfig.OrToken)
             {
-                searchTerms.Add(token);
+                if (token[0] == TokenizerConfig.SegmentToken[0] && token[0] == token[^1])
+                {
+                    searchTerms.Add(token.Trim(TokenizerConfig.SegmentToken[0]));
+                }
+                else
+                {
+                    searchTerms.Add(token);
+                }
             }
         }
         return searchTerms;
