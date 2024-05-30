@@ -29,6 +29,7 @@ public class LuceneQueryConditionBuilder
                     Query operand = stack.Pop();
                     var booleanQuery = new BooleanQuery
                     {
+                        { new MatchAllDocsQuery(), Occur.SHOULD },
                         { operand, Occur.MUST_NOT }
                     };
                     stack.Push(booleanQuery);

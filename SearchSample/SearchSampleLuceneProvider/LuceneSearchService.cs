@@ -62,11 +62,8 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
     public bool Exists(Guid uuid)
     {
         var term = new Term(nameof(SearchableDocument.Uuid), uuid.ToString());
-        using var reader = DirectoryReader.Open(directory);
-        var searcher = new IndexSearcher(reader);
         var query = new TermQuery(term);
-        var hits = searcher.Search(query, 1).ScoreDocs;
-        return hits.Length > 0;
+        return FindUuids(query, 1).Count > 0;
     }
 
     public void Update(SearchableDocument searchableDocument)
@@ -104,7 +101,7 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         writer.Commit();
     }
 
-    public IList<Guid> FindUuids(SearchRequest searchRequest, int maxResults = 100)
+    public IList<Guid> FindUuids(SearchRequest searchRequest, int maxResults = int.MaxValue)
     {
         var tokens = SearchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
         var query = luceneQueryConditionBuilder.ConvertToLuceneQuery(tokens);
@@ -113,7 +110,7 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         return FindUuids(query, maxResults);
     }
 
-    public IList<SearchableDocument> FindSearchableDocuments(SearchRequest searchRequest, int maxResults = 100)
+    public IList<SearchableDocument> FindSearchableDocuments(SearchRequest searchRequest, int maxResults = int.MaxValue)
     {
         var tokens = SearchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
         var query = luceneQueryConditionBuilder.ConvertToLuceneQuery(tokens);
@@ -122,29 +119,13 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         return FindSearchableDocuments(query, maxResults);
     }
 
-    public IList<Guid> FindUuids(Query query, int maxResults = 100)
-    {
-        using var reader = DirectoryReader.Open(directory);
-        var searcher = new IndexSearcher(reader);
-        var hits = searcher.Search(query, maxResults).ScoreDocs;
-        return hits.Select(hit => Guid.Parse(searcher.Doc(hit.Doc).Get(nameof(SearchableDocument.Uuid)))).ToList();
-    }
-
-    public IList<SearchableDocument> FindSearchableDocuments(Query query, int maxResults = 100)
-    {
-        using var reader = DirectoryReader.Open(directory);
-        var searcher = new IndexSearcher(reader);
-        var hits = searcher.Search(query, maxResults).ScoreDocs;
-        return hits.Select(hit => MapToSearchableDocument(searcher.Doc(hit.Doc))).ToList();
-    }
-
-    public IList<Guid> GetAllKeys()
+    public IList<Guid> FindUuids(Query query, int maxResults = int.MaxValue)
     {
         try
         {
             using var reader = DirectoryReader.Open(directory);
             var searcher = new IndexSearcher(reader);
-            var hits = searcher.Search(new MatchAllDocsQuery(), int.MaxValue).ScoreDocs;
+            var hits = searcher.Search(query, maxResults).ScoreDocs;
             return hits.Select(hit => Guid.Parse(searcher.Doc(hit.Doc).Get(nameof(SearchableDocument.Uuid)))).ToList();
         }
         catch (IndexNotFoundException)
@@ -153,19 +134,29 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         }
     }
 
-    public IList<SearchableDocument> GetAllDocuments()
+    public IList<SearchableDocument> FindSearchableDocuments(Query query, int maxResults = int.MaxValue)
     {
         try
         {
             using var reader = DirectoryReader.Open(directory);
             var searcher = new IndexSearcher(reader);
-            var hits = searcher.Search(new MatchAllDocsQuery(), int.MaxValue).ScoreDocs;
+            var hits = searcher.Search(query, maxResults).ScoreDocs;
             return hits.Select(hit => MapToSearchableDocument(searcher.Doc(hit.Doc))).ToList();
         }
         catch (IndexNotFoundException)
         {
             return [];
         }
+    }
+
+    public IList<Guid> GetAllKeys()
+    {
+        return FindUuids(new MatchAllDocsQuery(), int.MaxValue);
+    }
+
+    public IList<SearchableDocument> GetAllDocuments()
+    {
+        return FindSearchableDocuments(new MatchAllDocsQuery(), int.MaxValue);
     }
 
     public void Dispose()

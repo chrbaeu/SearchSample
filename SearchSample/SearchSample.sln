@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SearchSamplePerformanceTest
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SearchSampleDbProvider", "SearchSampleDbProvider\SearchSampleDbProvider.csproj", "{7BB881D2-4462-4B56-A356-9EE483654665}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SearchSampleLuceneProvider", "SearchSampleLuceneProvider\SearchSampleLuceneProvider.csproj", "{34C051AE-378D-4A8F-A5C4-C7DF81C8B2CC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SearchSampleLuceneProvider", "SearchSampleLuceneProvider\SearchSampleLuceneProvider.csproj", "{34C051AE-378D-4A8F-A5C4-C7DF81C8B2CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
