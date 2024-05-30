@@ -59,11 +59,11 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         writer.Commit();
     }
 
-    public bool Exists(Guid uuid)
+    public bool Exists(Guid key)
     {
-        var term = new Term(nameof(SearchableDocument.Uuid), uuid.ToString());
+        var term = new Term(nameof(SearchableDocument.Uuid), key.ToString());
         var query = new TermQuery(term);
-        return FindUuids(query, 1).Count > 0;
+        return FindKeys(query, 1).Count > 0;
     }
 
     public void Update(SearchableDocument searchableDocument)
@@ -84,42 +84,42 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         writer.Commit();
     }
 
-    public void Delete(Guid uuid)
+    public void Delete(Guid key)
     {
-        var term = new Term(nameof(SearchableDocument.Uuid), uuid.ToString());
+        var term = new Term(nameof(SearchableDocument.Uuid), key.ToString());
         writer.DeleteDocuments(term);
         writer.Commit();
     }
 
-    public void Delete(IEnumerable<Guid> uuids)
+    public void Delete(IEnumerable<Guid> keys)
     {
-        foreach (var uuid in uuids)
+        foreach (var key in keys)
         {
-            var term = new Term(nameof(SearchableDocument.Uuid), uuid.ToString());
+            var term = new Term(nameof(SearchableDocument.Uuid), key.ToString());
             writer.DeleteDocuments(term);
         }
         writer.Commit();
     }
 
-    public IList<Guid> FindUuids(SearchRequest searchRequest, int maxResults = int.MaxValue)
+    public IList<Guid> FindKeys(SearchRequest searchRequest, int maxResults = int.MaxValue)
     {
         var tokens = SearchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
         var query = luceneQueryConditionBuilder.ConvertToLuceneQuery(tokens);
         query = ApplyFiltersToQuery(query, searchRequest.SearchFilters);
         if (query is null) { return []; }
-        return FindUuids(query, maxResults);
+        return FindKeys(query, maxResults);
     }
 
-    public IList<SearchableDocument> FindSearchableDocuments(SearchRequest searchRequest, int maxResults = int.MaxValue)
+    public IList<SearchableDocument> FindDocuments(SearchRequest searchRequest, int maxResults = int.MaxValue)
     {
         var tokens = SearchQueryParser.ParseToPostfixTokens(searchRequest.SearchQuery);
         var query = luceneQueryConditionBuilder.ConvertToLuceneQuery(tokens);
         query = ApplyFiltersToQuery(query, searchRequest.SearchFilters);
         if (query is null) { return []; }
-        return FindSearchableDocuments(query, maxResults);
+        return FindDocuments(query, maxResults);
     }
 
-    public IList<Guid> FindUuids(Query query, int maxResults = int.MaxValue)
+    public IList<Guid> FindKeys(Query query, int maxResults = int.MaxValue)
     {
         try
         {
@@ -134,7 +134,7 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         }
     }
 
-    public IList<SearchableDocument> FindSearchableDocuments(Query query, int maxResults = int.MaxValue)
+    public IList<SearchableDocument> FindDocuments(Query query, int maxResults = int.MaxValue)
     {
         try
         {
@@ -151,12 +151,12 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
 
     public IList<Guid> GetAllKeys()
     {
-        return FindUuids(new MatchAllDocsQuery(), int.MaxValue);
+        return FindKeys(new MatchAllDocsQuery(), int.MaxValue);
     }
 
     public IList<SearchableDocument> GetAllDocuments()
     {
-        return FindSearchableDocuments(new MatchAllDocsQuery(), int.MaxValue);
+        return FindDocuments(new MatchAllDocsQuery(), int.MaxValue);
     }
 
     public void Dispose()
@@ -166,7 +166,7 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         directory?.Dispose();
     }
 
-    private Query? ApplyFiltersToQuery(Query? baseQuery, IEnumerable<SearchFilter> filters)
+    private static Query? ApplyFiltersToQuery(Query? baseQuery, IEnumerable<SearchFilter> filters)
     {
         if (filters == null || !filters.Any()) { return baseQuery; }
         var booleanQuery = new BooleanQuery();
@@ -190,7 +190,7 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         return booleanQuery;
     }
 
-    private Document MapToDocument(SearchableDocument obj)
+    private static Document MapToDocument(SearchableDocument obj)
     {
         var doc = new Document
         {
@@ -205,7 +205,7 @@ public class LuceneSearchService : IDisposable, ILuceneSearchService
         return doc;
     }
 
-    private SearchableDocument MapToSearchableDocument(Document doc)
+    private static SearchableDocument MapToSearchableDocument(Document doc)
     {
         var uuid = Guid.Parse(doc.Get(nameof(SearchableDocument.Uuid)));
         var title = doc.Get(nameof(SearchableDocument.Title));

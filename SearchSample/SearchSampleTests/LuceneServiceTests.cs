@@ -114,7 +114,7 @@ public class LuceneSearchServiceTests
         sut.Update(updatedDocument);
 
         // Assert
-        var retrievedDocuments = sut.FindSearchableDocuments(new SearchRequest { SearchQuery = "Updated Title" });
+        var retrievedDocuments = sut.FindDocuments(new SearchRequest { SearchQuery = "Updated Title" });
         retrievedDocuments.Should().HaveCount(1);
         retrievedDocuments.Should().ContainEquivalentOf(updatedDocument);
     }
@@ -194,7 +194,7 @@ public class LuceneSearchServiceTests
     }
 
     [Fact]
-    public void FindUuids_WithMatchingSearchQuery_ShouldReturnCorrectUuids()
+    public void FindKeys_WithMatchingSearchQuery_ShouldReturnCorrectUuids()
     {
         // Arrange
         var documents = CreateSampleDocuments();
@@ -202,14 +202,14 @@ public class LuceneSearchServiceTests
         var searchRequest = new SearchRequest { SearchQuery = "Group1" };
 
         // Act
-        var result = sut.FindUuids(searchRequest);
+        var result = sut.FindKeys(searchRequest);
 
         // Assert
         result.Should().BeEquivalentTo(documents.Take(2).Select(d => d.Uuid));
     }
 
     [Fact]
-    public void FindUuids_WithMatchingFilters_ShouldReturnCorrectUuids()
+    public void FindKeys_WithMatchingFilters_ShouldReturnCorrectUuids()
     {
         // Arrange
         var documents = CreateSampleDocuments();
@@ -220,14 +220,14 @@ public class LuceneSearchServiceTests
         };
 
         // Act
-        var result = sut.FindUuids(searchRequest);
+        var result = sut.FindKeys(searchRequest);
 
         // Assert
         result.Should().BeEquivalentTo(documents.Take(2).Select(d => d.Uuid));
     }
 
     [Fact]
-    public void FindUuids_WithMatchingSearchQueryAndFilters_ShouldReturnCorrectUuids()
+    public void FindKeys_WithMatchingSearchQueryAndFilters_ShouldReturnCorrectUuids()
     {
         // Arrange
         var documents = CreateSampleDocuments();
@@ -239,20 +239,20 @@ public class LuceneSearchServiceTests
         };
 
         // Act
-        var result = sut.FindUuids(searchRequest);
+        var result = sut.FindKeys(searchRequest);
 
         // Assert
         result.Should().BeEquivalentTo(documents.Skip(1).Take(1).Select(d => d.Uuid));
     }
 
     [Fact]
-    public void FindUuids_WithNotMatchingSearchQuery_ShouldReturnEmptyList()
+    public void FindKeys_WithNotMatchingSearchQuery_ShouldReturnEmptyList()
     {
         // Arrange
         var searchRequest = new SearchRequest { SearchQuery = "NonExisting" };
 
         // Act
-        var result = sut.FindUuids(searchRequest);
+        var result = sut.FindKeys(searchRequest);
 
         // Assert
         result.Should().BeEmpty();
@@ -260,7 +260,7 @@ public class LuceneSearchServiceTests
 
 
     [Fact]
-    public void FindSearchableDocuments_WithMatchingSearchQuery_ShouldReturnCorrectDocuments()
+    public void FindDocuments_WithMatchingSearchQuery_ShouldReturnCorrectDocuments()
     {
         // Arrange
         var documents = CreateSampleDocuments();
@@ -269,14 +269,14 @@ public class LuceneSearchServiceTests
         var searchRequest = new SearchRequest { SearchQuery = "Group1" };
 
         // Act
-        var result = sut.FindSearchableDocuments(searchRequest);
+        var result = sut.FindDocuments(searchRequest);
 
         // Assert
         result.Should().BeEquivalentTo(documents.Take(2));
     }
 
     [Fact]
-    public void FindSearchableDocuments_WithMatchingFilters_ShouldReturnCorrectDocuments()
+    public void FindSDocuments_WithMatchingFilters_ShouldReturnCorrectDocuments()
     {
         // Arrange
         var documents = CreateSampleDocuments();
@@ -287,14 +287,14 @@ public class LuceneSearchServiceTests
         };
 
         // Act
-        var result = sut.FindSearchableDocuments(searchRequest);
+        var result = sut.FindDocuments(searchRequest);
 
         // Assert
         result.Should().BeEquivalentTo(documents.Take(2));
     }
 
     [Fact]
-    public void FindSearchableDocuments_WithMatchingSearchQueryAndFilters_ShouldReturnCorrectDocuments()
+    public void FindDocuments_WithMatchingSearchQueryAndFilters_ShouldReturnCorrectDocuments()
     {
         // Arrange
         var documents = CreateSampleDocuments();
@@ -306,53 +306,53 @@ public class LuceneSearchServiceTests
         };
 
         // Act
-        var result = sut.FindSearchableDocuments(searchRequest);
+        var result = sut.FindDocuments(searchRequest);
 
         // Assert
         result.Should().BeEquivalentTo(documents.Skip(1).Take(1));
     }
 
     [Fact]
-    public void FindSearchableDocuments_WithNotMatchingSearchQuery_ShouldReturnEmptyList()
+    public void FindDocuments_WithNotMatchingSearchQuery_ShouldReturnEmptyList()
     {
         // Arrange
         var searchRequest = new SearchRequest { SearchQuery = "NonExisting" };
 
         // Act
-        var result = sut.FindSearchableDocuments(searchRequest);
+        var result = sut.FindDocuments(searchRequest);
 
         // Assert
         result.Should().BeEmpty();
     }
 
     [Fact]
-    public void FindSearchableDocuments_WithNoQuery_ShouldReturnEmptyList()
+    public void FindDocuments_WithNoQuery_ShouldReturnEmptyList()
     {
         // Arrange
         var searchRequest = new SearchRequest();
 
         // Act
-        var result = sut.FindSearchableDocuments(searchRequest);
+        var result = sut.FindDocuments(searchRequest);
 
         // Assert
         result.Should().BeEmpty();
     }
 
     [Fact]
-    public void FindSearchableDocuments_WithInvalidQuery_ShouldReturnEmptyList()
+    public void FindDocuments_WithInvalidQuery_ShouldReturnEmptyList()
     {
         // Arrange
         var searchRequest = new SearchRequest() { SearchQuery = null!, SearchFilters = null! };
 
         // Act
-        var result = sut.FindSearchableDocuments(searchRequest);
+        var result = sut.FindDocuments(searchRequest);
 
         // Assert
         result.Should().BeEmpty();
     }
 
     [Fact]
-    public void FindSearchableDocuments_WithInvalidEmptyFilters_ShouldReturnEmptyList()
+    public void FindDocuments_WithInvalidEmptyFilters_ShouldReturnEmptyList()
     {
         // Arrange
         var searchRequest = new SearchRequest()
@@ -366,14 +366,14 @@ public class LuceneSearchServiceTests
         };
 
         // Act
-        var result = sut.FindSearchableDocuments(searchRequest);
+        var result = sut.FindDocuments(searchRequest);
 
         // Assert
         result.Should().BeEmpty();
     }
 
     [Fact]
-    public void FindSearchableDocuments_WithComplexQuery_ShouldReturnCorrectDocuments()
+    public void FindDocuments_WithComplexQuery_ShouldReturnCorrectDocuments()
     {
         // Arrange
         var documents = CreateSampleDocuments();
@@ -384,7 +384,7 @@ public class LuceneSearchServiceTests
         };
 
         // Act
-        var result = sut.FindSearchableDocuments(searchRequest);
+        var result = sut.FindDocuments(searchRequest);
 
         // Assert
         result.Should().BeEquivalentTo(documents.Skip(1).Take(1));
