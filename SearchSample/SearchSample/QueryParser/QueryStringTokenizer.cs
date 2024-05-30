@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace SearchSample.QueryParser;
@@ -107,12 +108,16 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
         }
     }
 
-    private List<string> FixTokens(IEnumerable<string> srcTokens)
+    private List<string> FixTokens(IList<string> srcTokens)
     {
         List<string> tokens = [];
         int openBrackets = 0;
         bool lastWasOperator = true;
-        foreach (var srcToken in srcTokens)
+        var openingBracketTokensCount = srcTokens.Where(x => x == config.OpeningBracketToken).Count();
+        var closingBracketTokensCount = srcTokens.Where(x => x == config.ClosingBracketToken).Count();
+        var missingBrackets = Enumerable.Range(0, Math.Max(0, openingBracketTokensCount - closingBracketTokensCount))
+            .Select(x => config.ClosingBracketToken);
+        foreach (var srcToken in srcTokens.Concat(missingBrackets))
         {
             var token = srcToken;
             if (config.OperatorWords.TryGetValue(token, out var opToken))
@@ -143,10 +148,9 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
                         // Skip empty brackets
                         tokens.RemoveAt(tokens.Count - 1);
                         openBrackets--;
-                        lastWasOperator = config.IsOperator(tokens[^1]);
+                        lastWasOperator = tokens.Count == 0 || config.IsOperator(tokens[^1]) || tokens[^1] == config.OpeningBracketToken;
                         continue;
                     }
-                    // Remove last operator because it's not valid
                     tokens.RemoveAt(tokens.Count - 1);
                     if (tokens.Count > 0 && tokens[^1] == config.OpeningBracketToken)
                     {
@@ -156,6 +160,14 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
                         lastWasOperator = config.IsOperator(tokens[^1]);
                         continue;
                     }
+                }
+                if (tokens.Count > 1 && tokens[^2] == config.OpeningBracketToken)
+                {
+                    // Skip not needed brackets
+                    tokens.RemoveAt(tokens.Count - 2);
+                    openBrackets--;
+                    lastWasOperator = tokens.Count == 0 || config.IsOperator(tokens[^1]) || tokens[^1] == config.OpeningBracketToken;
+                    continue;
                 }
                 openBrackets--;
                 lastWasOperator = false;

@@ -29,6 +29,19 @@ public class QueryStringTokenizerTests
     [InlineData("Test1 '' Test2", "Test1_&_Test2")]
     [InlineData("'Test1 Test2", "\"Test1 Test2\"")]
     [InlineData("\\'Test1 Test2", "'Test1_&_Test2")]
+    [InlineData("Test1 ( Test2 )", "Test1_&_Test2")]
+    [InlineData("Test1 ( & )", "Test1")]
+    [InlineData("Test1 ( ( & )", "Test1")]
+    [InlineData("Test1 ( ( ( & )", "Test1")]
+    [InlineData("Test1 ( ( ( & ) &  Test2", "Test1_&_Test2")]
+    [InlineData("Test1 ( ( ( Test2 & ) ) ) Test3", "Test1_&_Test2_&_Test3")]
+    [InlineData("Test1 ( ( ( ! ) ) ) Test3", "Test1_&_Test3")]
+    [InlineData("(", "")]
+    [InlineData(")", "")]
+    [InlineData("&", "")]
+    [InlineData("|", "")]
+    [InlineData("!", "")]
+    [InlineData("( ( ( & ) &  Test2", "Test2")]
     public void GetTokensTest(string query, string result)
     {
         var tokens = queryStringTokenizer.GetTokens(query);
