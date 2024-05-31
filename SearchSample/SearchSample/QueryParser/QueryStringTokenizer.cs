@@ -64,10 +64,6 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
             tokenizerState.IsSegment = true;
             tokenizerState.StringBuilder.Append(config.SegmentToken);
         }
-        else if (config.WhiteSpaceChars.Contains(c))
-        {
-            FinishToken(tokenizerState);
-        }
         else if (config.OpeningBracketChars.Contains(c))
         {
             FinishToken(tokenizerState);
@@ -92,6 +88,10 @@ internal sealed class QueryStringTokenizer(TokenizerConfig config)
         {
             FinishToken(tokenizerState);
             tokenizerState.Tokens.Add(config.OrToken);
+        }
+        else if (config.WordSeparatorChars.Contains(c))
+        {
+            FinishToken(tokenizerState);
         }
         else
         {

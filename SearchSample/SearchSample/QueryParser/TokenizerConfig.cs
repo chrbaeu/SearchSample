@@ -14,7 +14,7 @@ public record class TokenizerConfig
     public string? DefaultOpToken { get; init; } = "&";
     public IReadOnlySet<char> EscapeChars { get; init; } = new HashSet<char>() { '\\' };
     public IReadOnlySet<char> SegmentChars { get; init; } = new HashSet<char>() { '"', '\'' };
-    public IReadOnlySet<char> WhiteSpaceChars { get; init; } = new HashSet<char>() { ' ', '\t' };
+    public IReadOnlySet<char> WordSeparatorChars { get; init; } = CharsHelper.GetWordSeparatorChars();
     public IReadOnlySet<char> OpeningBracketChars { get; init; } = new HashSet<char>() { '(', '{', '[' };
     public IReadOnlySet<char> ClosingBracketChars { get; init; } = new HashSet<char>() { ')', '}', ']' };
     public IReadOnlySet<char> NotOperatorChars { get; init; } = new HashSet<char>() { '!' };

@@ -45,7 +45,7 @@ internal sealed class QueryStringTokenizerOld(TokenizerConfig config)
                 isSegment = true;
                 sb.Append(config.SegmentToken);
             }
-            else if (config.WhiteSpaceChars.Contains(c))
+            else if (config.WordSeparatorChars.Contains(c))
             {
                 FinishToken();
             }
