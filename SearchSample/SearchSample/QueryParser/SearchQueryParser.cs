@@ -42,7 +42,7 @@ public class SearchQueryParser
     /// <returns>A list of parsed tokens in postfix notation.</returns>
     public IList<string> ParseToPostfixTokens(string query)
     {
-        return infixToPostfixConverter.InfixToPostfix(SynonymHandler.InsertSynonymConditions(tokenizer.GetTokens(query))).Select(x => x.ToLower()).ToList();
+        return infixToPostfixConverter.InfixToPostfix(SynonymHandler.InsertSynonymConditions(tokenizer.GetTokens(query))).Select(x => x.ToLowerInvariant()).ToList();
     }
 
     public IList<string> GetSearchWords(string query)

@@ -12,10 +12,10 @@ public class SqlitePredicateBuilder(TokenizerConfig config) : SearchPredicateBui
     //    .GetMethod(nameof(DbFunctionsExtensions.Like), [typeof(DbFunctions), typeof(string), typeof(string)])!;
 
 
-    protected override MethodCallExpression ContainsMethodCallBuilder(MemberExpression property, string token)
+    protected override MethodCallExpression ContainsMethodCallBuilder(MemberExpression propertyExpression, string token)
     {
         //return Expression.Call(null, containsMethod, Expression.Constant(EF.Functions), Expression.Constant(property.Member.Name), Expression.Constant($"%{token}%"));
-        return Expression.Call(property, containsMethod, Expression.Constant(token));
+        return Expression.Call(propertyExpression, containsMethod, Expression.Constant(token));
     }
 
 }

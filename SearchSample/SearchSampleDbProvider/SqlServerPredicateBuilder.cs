@@ -11,9 +11,9 @@ public class SqlServerPredicateBuilder(TokenizerConfig config) : SearchPredicate
     private readonly MethodInfo containsMethod = typeof(SqlServerDbFunctionsExtensions)
         .GetMethod(nameof(SqlServerDbFunctionsExtensions.Contains), [typeof(DbFunctions), typeof(object), typeof(string)])!;
 
-    protected override MethodCallExpression ContainsMethodCallBuilder(MemberExpression property, string token)
+    protected override MethodCallExpression ContainsMethodCallBuilder(MemberExpression propertyExpression, string token)
     {
-        return Expression.Call(null, containsMethod, Expression.Constant(EF.Functions), property, Expression.Constant($"\"*{token}*\""));
+        return Expression.Call(null, containsMethod, Expression.Constant(EF.Functions), propertyExpression, Expression.Constant($"\"*{token}*\""));
     }
 
 }

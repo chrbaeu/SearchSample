@@ -11,13 +11,13 @@ public class LinqPredicateBuilder(TokenizerConfig config) : SearchPredicateBuild
 
     private readonly MethodInfo containsMethod = typeof(string).GetMethod(nameof(string.Contains), [typeof(string), typeof(StringComparison)])!;
 
-    protected override MethodCallExpression ContainsMethodCallBuilder(MemberExpression property, string token)
+    protected override MethodCallExpression ContainsMethodCallBuilder(MemberExpression propertyExpression, string searchWord)
     {
-        if (token[0] == config.SegmentToken[0] && token[0] == token[^1])
+        if (searchWord[0] == config.SegmentToken[0] && searchWord[0] == searchWord[^1])
         {
-            token = token.Trim(config.SegmentToken[0]);
+            searchWord = searchWord.Trim(config.SegmentToken[0]);
         }
-        return Expression.Call(property, containsMethod, Expression.Constant(token), Expression.Constant(StringComparison.OrdinalIgnoreCase));
+        return Expression.Call(propertyExpression, containsMethod, Expression.Constant(searchWord), Expression.Constant(StringComparison.OrdinalIgnoreCase));
     }
 
 }

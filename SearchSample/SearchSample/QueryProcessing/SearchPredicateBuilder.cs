@@ -52,6 +52,6 @@ public abstract class SearchPredicateBuilder(TokenizerConfig config)
     /// <param name="property">The property expression.</param>
     /// <param name="searchWord">The search word.</param>
     /// <returns>The method call expression.</returns>
-    protected abstract MethodCallExpression ContainsMethodCallBuilder(MemberExpression property, string searchWord);
+    protected abstract MethodCallExpression ContainsMethodCallBuilder(MemberExpression propertyExpression, string searchWord);
 
 }

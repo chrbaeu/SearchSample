@@ -45,7 +45,7 @@ public partial class SearchWordHighlighter
         {
             if (match.Index > lastMatchEnd)
             {
-                yield return (inputText.Substring(lastMatchEnd, match.Index - lastMatchEnd), false);
+                yield return (inputText[lastMatchEnd..match.Index], false);
             }
             yield return (match.Value, true);
             lastMatchEnd = match.Index + match.Length;
